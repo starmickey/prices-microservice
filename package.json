@@ -1,0 +1,43 @@
+{
+  "name": "prices",
+  "version": "1.0.0",
+  "description": "e-commerce prices microservice using RabbitMQ",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx tsc",
+    "start": "node dist/index.js",
+    "dev": "nodemon src/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/starmickey/prices-microservice.git"
+  },
+  "keywords": [
+    "microservice",
+    "rabbitmq",
+    "prices",
+    "e-commerce",
+    "utn"
+  ],
+  "author": "starmickey",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/starmickey/prices-microservice/issues"
+  },
+  "homepage": "https://github.com/starmickey/prices-microservice#readme",
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.9.1",
+    "concurrently": "^9.1.0",
+    "nodemon": "^3.1.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.4",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "mongodb": "^6.10.0",
+    "mongoose": "^8.8.2"
+  }
+}

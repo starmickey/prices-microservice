@@ -1,0 +1,9 @@
+# Prohect
+.env
+
+# Node
+node_modules
+
+# Drawio
+*.drawio.bkp
+*.drawio
