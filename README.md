@@ -10,7 +10,7 @@ El microservicio de precios, como su nombre lo indica, permite gestionar los pre
 
 ## Casos de uso
 
-![Modelo de casos de uso](diagrams/casos-de-uso.png "Modelo de casos de uso")
+![Modelo de casos de uso](docs/diagrams/casos-de-uso.png "Modelo de casos de uso")
 
 ### CU1. Actualizar precio de artículo
 
@@ -600,7 +600,7 @@ Authorization: Bearer token
 
 **Interfaz asincrónica (Rabbit)**
 
-![Diagrama de interacciones de CU8](diagrams/interacciones-cu8.png "Diagrama de interacciones de CU8")
+![Diagrama de interacciones de CU8](docs/diagrams/interacciones-cu8.png "Diagrama de interacciones de CU8")
 
 `GET rabbit/update_cost`
 
@@ -655,7 +655,7 @@ Authorization: Bearer token
 
 ## Modelo de datos
 
-![Diagrama de clases](diagrams/clases.png "Diagrama de clases")
+![Diagrama de clases](docs/diagrams/clases.png "Diagrama de clases")
 
 **Article**
 - id: `number`
