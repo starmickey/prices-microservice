@@ -18,7 +18,7 @@ export function getConfig(): Config {
 
     config = {
       port: process.env.SERVER_PORT || "3001",
-      mongoPath: process.env.MONGO_URL || "mongodb://127.0.0.1:27017/test",
+      mongoPath: process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/test",
     }
   }
   return config;

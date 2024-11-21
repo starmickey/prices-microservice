@@ -659,7 +659,7 @@ Authorization: Bearer token
 
 **Article**
 - id: `number`
-- state: `ProductState`
+- state: `ArticleState`
 
 **ArticleState**
 - id: `number`
