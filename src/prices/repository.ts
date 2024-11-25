@@ -23,8 +23,13 @@ export async function getMostRecentArticlePrice(articleId: string) {
     throw new Error("Article state is not 'TAXED'");
   }
 
-  const recentPrice = await ArticlePrice.findOne({ articleId: article._id })
-    .sort({ startDate: -1 }); // Sort by startDate descending to get the most recent
+  const today = new Date();
+  const recentPrice = await ArticlePrice.findOne({ 
+    articleId: article._id, 
+    startDate: { $lte: today } // Filter for startDate <= today
+  })
+  .sort({ startDate: -1 }) // Sort by startDate descending to get the most recent price
+  .limit(1); // Ensure only one price is returned
 
   if (!recentPrice) {
     throw new Error("No price information available for the article");

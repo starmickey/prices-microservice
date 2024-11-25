@@ -6,7 +6,6 @@ export default async function updateArticlePrice(req: Request, res: Response) {
   try {
     // Validate inputs
     if(!("articleId" in req.body) || !("price" in req.body)) {
-      console.warn("Bad request: Missing parameters.")
       res.status(400).json({ error: "Bad request: Missing parameters." });
       return;
     }
@@ -14,13 +13,11 @@ export default async function updateArticlePrice(req: Request, res: Response) {
     const { articleId, price } = req.body;
 
     if (typeof articleId !== "string" || !articleId.trim()) {
-      console.warn("Invalid articleId: ", articleId);
       res.status(400).json({ error: "Invalid articleId. Must be an string." });
       return;
     }
 
     if (typeof price !== "number" || price <= 0) {
-      console.warn("Invalid price: ", price);
       res.status(400).json({ error: "Invalid price. Must be a numeric value greater than zero." });
       return;
     }
@@ -33,7 +30,6 @@ export default async function updateArticlePrice(req: Request, res: Response) {
       const parsedStartDate = moment(providedDate);
 
       if (!parsedStartDate.isValid() || parsedStartDate.isBefore(currentDate)) {
-        console.warn("Invalid startdate: ", providedDate);
         res.status(400).json({ error: "Invalid startDate. Must be a valid date after the current date." });
         return;
       }
