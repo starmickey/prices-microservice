@@ -37,7 +37,6 @@ afterEach(async () => {
 describe("Schema Models", () => {
   it("should create and validate ArticleState successfully", async () => {
     const articleState = await ArticleState.create({
-      articleStateId: "state-001",
       name: "TAXED",
       description: "Taxed state",
     });
@@ -53,7 +52,6 @@ describe("Schema Models", () => {
     } catch (error) {
       expect(error).toBeInstanceOf(mongoose.Error.ValidationError);
       const validationError = error as mongoose.Error.ValidationError;
-      expect(validationError.errors).toHaveProperty("articleStateId");
       expect(validationError.errors).toHaveProperty("name");
     }
   });
@@ -77,7 +75,6 @@ describe("Schema Models", () => {
 
   it("should create and validate ArticlePrice successfully with Article reference", async () => {
     const articleState = await ArticleState.create({
-      articleStateId: "state-003",
       name: "ACTIVE",
       description: "Active state",
     });
@@ -88,7 +85,6 @@ describe("Schema Models", () => {
     });
 
     const articlePrice = await ArticlePrice.create({
-      articlePriceId: "price-001",
       price: 100.5,
       startDate: new Date(),
       articleId: article._id,
@@ -101,7 +97,6 @@ describe("Schema Models", () => {
 
   it("should create and validate Discount successfully", async () => {
     const discount = await Discount.create({
-      discountId: "discount-001",
       name: "Summer Sale",
       description: "15% off during summer",
       startDate: new Date(),
@@ -115,7 +110,6 @@ describe("Schema Models", () => {
 
   it("should create and validate ArticleDiscount with Article and Discount references", async () => {
     const discount = await Discount.create({
-      discountId: "discount-002",
       name: "Winter Sale",
       description: "10% off during winter",
       startDate: new Date(),
@@ -123,7 +117,6 @@ describe("Schema Models", () => {
     });
 
     const articleState = await ArticleState.create({
-      articleStateId: "state-004",
       name: "ON SALE",
       description: "On sale state",
     });
@@ -134,7 +127,6 @@ describe("Schema Models", () => {
     });
 
     const articleDiscount = await ArticleDiscount.create({
-      articleDiscountId: "art-disc-001",
       price: 50,
       quantity: 2,
       articleId: article._id,
@@ -149,26 +141,22 @@ describe("Schema Models", () => {
 
   it("should validate DiscountType with DiscountTypeParameter and their values", async () => {
     const discountType = await DiscountType.create({
-      discountTypeId: "type-001",
       name: "Seasonal Discount",
       description: "Applies to specific seasons",
     });
 
     const dataType = await DataType.create({
-      dataTypeId: "data-type-001",
       name: "STRING", 
       description: "used for strings",
     });
 
     const discountTypeParameter = await DiscountTypeParameter.create({
-      discountTypeParameterId: "param-001",
       name: "Season",
       discountTypeId: discountType._id,
       type: dataType._id,
     });
 
     const discountTypeParameterValue = await DiscountTypeParameterValue.create({
-      discountTypeParameterValueId: "param-value-001",
       value: "Summer",
       discountTypeParameterId: discountTypeParameter._id,
       discountId: new Types.ObjectId(), // Mocked Discount reference

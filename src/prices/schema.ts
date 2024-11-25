@@ -10,7 +10,6 @@ const ArticleSchema = new Schema({
 
 // ArticleState Schema
 const ArticleStateSchema = new Schema({
-  articleStateId: { type: String, trim: true, default: "", required: true },
   name: { type: String, required: true }, // Example: 'TAXED', 'UNTAXED', 'DELETED'
   description: { type: String, default: "" },
   deleteDate: { type: Date, default: null },
@@ -18,7 +17,6 @@ const ArticleStateSchema = new Schema({
 
 // ArticlePrice Schema
 const ArticlePriceSchema = new Schema({
-  articlePriceId: { type: String, trim: true, default: "", required: true },
   price: { type: Number, required: true },
   startDate: { type: Date, required: true },
   articleId: { type: Schema.Types.ObjectId, ref: 'Article', required: true }, // Foreign key reference
@@ -26,7 +24,6 @@ const ArticlePriceSchema = new Schema({
 
 // Discount Schema
 const DiscountSchema = new Schema({
-  discountId: { type: String, trim: true, default: "", required: true },
   name: { type: String, required: true },
   description: { type: String },
   startDate: { type: Date, required: true },
@@ -36,7 +33,6 @@ const DiscountSchema = new Schema({
 
 // ArticleDiscount Schema
 const ArticleDiscountSchema = new Schema({
-  articleDiscountId: { type: String, trim: true, default: "", required: true },
   price: { type: Number, required: true },
   quantity: { type: Number, required: true },
   articleId: { type: Schema.Types.ObjectId, ref: 'Article', required: true }, // Foreign key reference
@@ -45,7 +41,6 @@ const ArticleDiscountSchema = new Schema({
 
 // DiscountType Schema
 const DiscountTypeSchema = new Schema({
-  discountTypeId: { type: String, trim: true, default: "", required: true },
   name: { type: String, required: true },
   description: { type: String },
   endDate: { type: Date, default: null },
@@ -53,7 +48,6 @@ const DiscountTypeSchema = new Schema({
 
 // DiscountTypeParameter Schema
 const DiscountTypeParameterSchema = new Schema({
-  discountTypeParameterId: { type: String, trim: true, default: "", required: true },
   name: { type: String, required: true },
   deleteDate: { type: Date, default: null },
   discountTypeId: { type: Schema.Types.ObjectId, ref: 'DiscountType', required: true }, // Foreign key reference
@@ -62,7 +56,6 @@ const DiscountTypeParameterSchema = new Schema({
 
 // DiscountTypeParameterValue Schema
 const DiscountTypeParameterValueSchema = new Schema({
-  discountTypeParameterValueId: { type: String, trim: true, default: "", required: true },
   value: { type: String, required: true },
   deleteDate: { type: Date, default: null },
   discountTypeParameterId: { type: Schema.Types.ObjectId, ref: 'DiscountTypeParameter', required: true }, // Foreign key reference
@@ -71,7 +64,6 @@ const DiscountTypeParameterValueSchema = new Schema({
 
 // DataType Schema
 const DataTypeSchema = new Schema({
-  dataTypeId: { type: String, trim: true, default: "", required: true },
   name: { type: String, required: true }, // Example: 'STRING', 'INT', 'FLOAT'
   description: { type: String },
   deleteDate: { type: Date, default: null },
