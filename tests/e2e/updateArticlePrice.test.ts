@@ -45,7 +45,7 @@ describe("POST /v1/prices/update", () => {
       .send({ articleId: "123", price: 99.99, startDate: moment().add(1, "days").format("YYYY-MM-DD") });
 
     // console.log(response);
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(201);
   });
 
   it('should return 400 on no articleId', async () => {
@@ -70,12 +70,12 @@ describe("POST /v1/prices/update", () => {
     });
   });
 
-  it('should return 200 on no start date', async () => {
+  it('should return 201 on no start date', async () => {
     const response = await request(app)
       .post("/v1/prices/update")
       .send({ articleId: "123", price: 99.99 });
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(201);
   });
 
   it('should return 400 on old start date', async () => {
