@@ -2,6 +2,7 @@ import { MongoError } from "mongodb";
 import { Config, getConfig } from "./server/environment";
 import { init as initExpress } from "./server/express";
 import mongoose from "mongoose";
+import initialDataBaseConfig from "./prices/initialConfig";
 
 const conf: Config = getConfig();
 
@@ -13,6 +14,7 @@ process.on("unhandledRejection", (reason, p) => {
 // Connect to MongoDB
 mongoose.connect(conf.mongoPath, {}).then(() => {
   console.log("Connected to MongoDB");
+  initialDataBaseConfig();
 }).catch((error: MongoError) => {
   console.error("Error connecting to MongoDB: ", error);
 });
