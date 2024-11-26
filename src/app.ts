@@ -1,11 +1,11 @@
 "use strict";
 
 import express, { Express, NextFunction, Request, Response } from "express";
-import { Config } from "./environment";
-import routes from "./routes/index";
+import { Config } from "./config";
+import { initRouter } from "./routes";
 import bodyParser from "body-parser";
 
-export function init(appConfig: Config): Express {
+export function initExpress(appConfig: Config): Express {
   const app = express();
   app.set("port", appConfig.port);
 
@@ -18,7 +18,7 @@ export function init(appConfig: Config): Express {
     next();
   });
 
-  app.use("/", routes);
+  app.use("/", initRouter());
 
   return app;
 }

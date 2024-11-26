@@ -3,9 +3,9 @@ import moment from "moment";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import mongoose from "mongoose";
 import request from "supertest";
-import { Article, ArticlePrice, ArticleState } from "../../src/prices/schema";
-import { Config, getConfig } from "../../src/server/environment";
-import { init as initExpress } from "../../src/server/express";
+import { Article, ArticlePrice, ArticleState } from "../../src/models/models";
+import { Config, getConfig } from "../../src/config";
+import { initExpress } from "../../src/app";
 
 let app: Express;
 let mongoServer: MongoMemoryServer;
@@ -40,9 +40,13 @@ afterEach(async () => {
 describe("POST /v1/prices/update", () => {
 
   it("updates successfully", async () => {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    const tommorrowStr = date.toISOString();
+
     const response = await request(app)
       .post("/v1/prices/update")
-      .send({ articleId: "123", price: 99.99, startDate: moment().add(1, "days").format("YYYY-MM-DD") });
+      .send({ articleId: "123", price: 99.99, startDate: tommorrowStr });
 
     // console.log(response);
     expect(response.status).toBe(201);
@@ -55,18 +59,22 @@ describe("POST /v1/prices/update", () => {
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
-      error: "Bad request: Missing parameters."
+      error: "Bad Request: ArticleId is missing"
     });
   });
 
   it('should return 400 on no price', async () => {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    const tommorrowStr = date.toISOString();
+
     const response = await request(app)
       .post("/v1/prices/update")
-      .send({ articleId: "123", startDate: moment().format("YYYY-MM-DD") });
+      .send({ articleId: "123", startDate: tommorrowStr });
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
-      error: "Bad request: Missing parameters."
+      error: "Bad Request: Price is missing"
     });
   });
 
@@ -87,7 +95,7 @@ describe("POST /v1/prices/update", () => {
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
-      error: "Invalid startDate. Must be a valid date after the current date."
+      error: "Bad Request: startDate must be a future date"
     });
   });
 });

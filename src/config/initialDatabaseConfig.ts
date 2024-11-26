@@ -1,4 +1,4 @@
-import { ArticleState, DataType } from './schema';
+import { ArticleState, DataType } from '../models/models';
 
 export default async function initialDataBaseConfig () {
   return ensureBasicArticleStatesAndDataTypes();

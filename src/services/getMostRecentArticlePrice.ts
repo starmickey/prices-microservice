@@ -1,5 +1,5 @@
-import { NotFound } from "./exceptions";
-import { Article, ArticlePrice, ArticleState } from "./schema";
+import { NotFound } from "../utils/exceptions";
+import { Article, ArticlePrice, ArticleState, Discount, DiscountType, DiscountTypeParameter } from "../models/models";
 
 /**
  * Gets the price of the most recent ArticlePrice for a given article.
@@ -7,7 +7,7 @@ import { Article, ArticlePrice, ArticleState } from "./schema";
  * @throws {NotFound | Error} If the article does not exist, its state is not 'TAXED', or no price is found.
  * @returns {Promise<number>} - The price of the most recent ArticlePrice.
  */
-export async function getMostRecentArticlePrice(articleId: string) {
+export async function getMostRecentArticlePrice(articleId: string): Promise<number> {
   if (!articleId.trim()) {
     throw TypeError("Missing articleId parameter");
   }
@@ -36,4 +36,46 @@ export async function getMostRecentArticlePrice(articleId: string) {
   }
 
   return recentPrice.price;
+}
+
+interface CreateDiscountProps {
+  name: string;
+  description: string;
+  articles: {
+    id: string;
+    quantity: number;
+  }[],
+  discountTypeId: string;
+  startDate: Date;
+  endDate: Date | undefined;
+  parameterValues: {
+    id: string;
+    value: string;
+  }[]
+}
+
+export async function createDiscount() {
+  
+}
+
+interface ValidateDiscountParametersProps {
+  discountTypeId: string;
+  parameterValues: {
+    id: string;
+    value: string;
+  }[]
+}
+
+export function validateDiscountParameters({ discountTypeId, parameterValues}: CreateDiscountProps) {
+  const discountType = DiscountType.findOne({ id: discountTypeId });
+
+  if(!discountType) {
+    throw new NotFound("DiscountType not found");
+  }
+
+  const discountTypeParameters = DiscountTypeParameter.find({ discountTypeId });
+
+  
+
+
 }

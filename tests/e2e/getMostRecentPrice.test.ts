@@ -2,9 +2,9 @@ import { Express } from "express";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import mongoose from "mongoose";
 import request from "supertest";
-import { Article, ArticlePrice, ArticleState } from "../../src/prices/schema";
-import { Config, getConfig } from "../../src/server/environment";
-import { init as initExpress } from "../../src/server/express";
+import { Article, ArticlePrice, ArticleState } from "../../src/models/models";
+import { Config, getConfig } from "../../src/config";
+import { initExpress } from "../../src/app";
 import moment from "moment";
 
 let app: Express;
@@ -35,25 +35,26 @@ describe("GET /v1/prices/:articleId", () => {
     const response = await request(app).get("/v1/prices");
 
     expect(response.status).toBe(400);
-    expect(response.body.error).toBe("Bad request: Missing article id.");
+    expect(response.body.error).toBe("Bad Request: ArticleId is missing");
   });
 
   it("should return 400 if articleId is invalid", async () => {
     const response = await request(app).get("/v1/prices?articleId=");
 
     expect(response.status).toBe(400);
-    expect(response.body.error).toBe("Invalid articleId. Must be an string.");
+    expect(response.body.error).toBe("Bad Request: ArticleId must have at least one character");
   });
 
   it("should return 200 and the most recent price if articleId is valid", async () => {
     const articleState = await ArticleState.create({ name: "TAXED" });
     const article = await Article.create({ articleId: "test-article", stateId: articleState._id });
+
     // Old price
-    await ArticlePrice.create({ articleId: article._id, price: 100, startDate: "2024-11-20T15:30:00.000Z"});
+    await ArticlePrice.create({ articleId: article._id, price: 100, startDate: moment().subtract(2, "days").toISOString()});
     // Current price
-    await ArticlePrice.create({ articleId: article._id, price: 101, startDate: "2024-11-25T14:30:00.000Z"});
+    await ArticlePrice.create({ articleId: article._id, price: 101, startDate: moment().subtract(1, "days").toISOString()});
     // Future price
-    await ArticlePrice.create({ articleId: article._id, price: 102, startDate: "2024-11-30T15:30:00.000Z"});
+    await ArticlePrice.create({ articleId: article._id, price: 102, startDate: moment().add(1, "days").toISOString()});
 
     const response = await request(app).get(`/v1/prices?articleId=test-article`);
 

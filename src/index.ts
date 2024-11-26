@@ -1,8 +1,8 @@
 import { MongoError } from "mongodb";
-import { Config, getConfig } from "./server/environment";
-import { init as initExpress } from "./server/express";
+import { Config, getConfig } from "./config";
+import { initExpress } from "./app";
 import mongoose from "mongoose";
-import initialDataBaseConfig from "./prices/initialConfig";
+import initialDataBaseConfig from "./config/initialDatabaseConfig";
 
 const conf: Config = getConfig();
 

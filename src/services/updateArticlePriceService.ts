@@ -1,10 +1,5 @@
-import { Article, ArticlePrice, ArticleState } from './schema';
-
-interface UpdateArticlePriceServiceParams {
-  articleId: string;
-  price: number;
-  startDate: Date;
-}
+import { UpdatePriceDTO } from '../dtos/api-entities/prices.dto';
+import { Article, ArticlePrice, ArticleState } from '../models/models';
 
 /**
  * Updates an article's price or creates a new article if it doesn't exist.
@@ -19,7 +14,7 @@ interface UpdateArticlePriceServiceParams {
  * 
  * @returns {Promise<void>} Resolves when the price update is completed or a new article is created.
  */
-export async function updateArticlePriceService({ articleId, price, startDate }: UpdateArticlePriceServiceParams): Promise<void> {
+export async function updateArticlePriceService({ articleId, price, startDate }: UpdatePriceDTO): Promise<UpdatePriceDTO> {
   // Validate existence of states
   const articleState = await ArticleState.findOne({ name: 'TAXED' });
 
@@ -33,20 +28,22 @@ export async function updateArticlePriceService({ articleId, price, startDate }:
     // Article doesn't exist, create a new one
     article = new Article({
       articleId,
-      stateId: articleState._id, 
+      stateId: articleState._id,
     });
-    await article.save(); 
-  } else {
+    await article.save();
+  } else if (article.stateId !== articleState._id) {
     // Article exists, update its state
     article.stateId = articleState._id;
-    await article.save(); 
+    await article.save();
   }
 
   const articlePrice = new ArticlePrice({
     price,
-    articleId: article._id, 
-    startDate, 
+    articleId: article._id,
+    startDate,
   });
 
   await articlePrice.save();
+
+  return { articleId, price, startDate };
 }
