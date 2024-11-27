@@ -10,7 +10,21 @@ import { emitPriceUpdatedEvent } from "../rabbitmq/notificationsApi";
 
 export async function getPrice(req: Request, res: Response) {
   try {
+    const token = req.user.token;
+
+    if (!token) {
+      throw new Unauthorized();
+    }
+
     const { articleId } = GetArticlePriceSchema.parse(req.query);
+
+    const articleExists = await getArticleExists(articleId, token);
+
+    if (!articleExists) {
+      markArticleAsRemoved(articleId);
+      res.status(404).json({ error: "Article not found" });
+      return;
+    }
 
     const price = await getMostRecentArticlePrice(articleId);
 
@@ -24,7 +38,7 @@ export async function updatePrice(req: Request, res: Response) {
   try {
     const token = req.user.token;
 
-    if(!token) {
+    if (!token) {
       throw new Unauthorized();
     }
 
@@ -41,7 +55,7 @@ export async function updatePrice(req: Request, res: Response) {
     await updateArticlePriceService({ articleId, price, startDate });
 
     emitPriceUpdatedEvent({ articleId, price, startDate });
-    
+
     res.status(201).json({ articleId, price, startDate });
 
   } catch (error) {
