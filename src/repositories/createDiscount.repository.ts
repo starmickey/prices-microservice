@@ -58,6 +58,8 @@ export async function createDiscount(params: CreateDiscountDTO) {
     ...articleDiscountPromises, // Wait for all ArticleDiscount saves
     ...paramValuesPromises // Wait for all DiscountTypeParameterValue saves
   ]);
+
+  return discount._id;
 }
 
 interface ValidateDiscountParametersProps {

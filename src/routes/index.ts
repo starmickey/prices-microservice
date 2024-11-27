@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getPrice, updatePrice } from "../controllers/prices.controller";
-import { createDiscount } from "../controllers/discounts.controller";
+import { createDiscount, updateDiscount } from "../controllers/discounts.controller";
 import { validateUserSignIn } from "../middlewares/auth.middleware";
 
 export function initRouter() {
@@ -11,6 +11,8 @@ export function initRouter() {
   router.route("/v1/prices/update").post(validateUserSignIn, updatePrice);
   
   router.route("/v1/discounts/create").post(validateUserSignIn, createDiscount);
+
+  router.route("/v1/discounts/update").post(validateUserSignIn, updateDiscount);
 
   return router;
 }

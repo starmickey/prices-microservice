@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const currentDate = new Date();
 
-export const CreateDiscountSchema = z.object({
+export const DiscountSchema = z.object({
   name: z
     .string({ required_error: "Name is missing", invalid_type_error: "Name must be a string" })
     .min(1, { message: "Name must have at least one character" }),
@@ -60,6 +60,20 @@ export const CreateDiscountSchema = z.object({
   )
     .optional()
 })
+
+export const CreateDiscountSchema = DiscountSchema
+  .extend({})
+  .refine(
+    (data) => !data.endDate || !data.startDate || data.endDate > data.startDate,
+    { message: "endDate must be after startDate", path: ["endDate"] }
+  );
+
+export const UpdateDiscountSchema = DiscountSchema
+  .extend({
+    id: z
+      .string({ required_error: "Discount id is missing", invalid_type_error: "Discount id invalid. It must be a string" })
+      .min(1, { message: "Discount id must have at least one character" })
+  })
   .refine(
     (data) => !data.endDate || !data.startDate || data.endDate > data.startDate,
     { message: "endDate must be after startDate", path: ["endDate"] }

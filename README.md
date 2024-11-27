@@ -229,22 +229,20 @@ Authorization: Bearer token
     - Validar que fecha_actual <= `startDate`
 6. Si se incluyó un `endDate` en los parámetros:
     - Validar que `startDate` < `endDate`
-7. Sino:
-    - Validar que el `endDate` del `Discount` anterior es mayor a la fecha actual.
-8. Validar existencia de artículos emitiendo `article_exist` al microservicio `Catalog` con `id` igual al ingresado por parámetros.
-9. Validar existencia de un `DiscountType` con `id`=`discountTypeId`. Al obtenerlo se recuperan los `DiscountTypeParameter` asociados.
-10. Validar que por cada `DiscountTypeParameter` se incluyó un `parameterValue` con `value` de tipo válido y `parameterId` numérico mayor a cero.
-11. Actualizar el `Discount anterior` con `endDate` igual a la actual.
-12. Crear instancia `Discount` con `name` y `description` iguales a los ingresados y `discountType` igual al recuperado y con:
+7. Validar existencia de artículos mediante comunicación con el microservicio catálogo.
+8. Validar existencia de un `DiscountType` con `id`=`discountTypeId`. Al obtenerlo se recuperan los `DiscountTypeParameter` asociados.
+9. Validar que por cada `DiscountTypeParameter` se incluyó un `parameterValue` con `value` de tipo válido y `parameterId` numérico mayor a cero.
+10. Actualizar el `Discount anterior` con `endDate` igual a la actual.
+11. Crear instancia `Discount` con `name` y `description` iguales a los ingresados y `discountType` igual al recuperado y con:
     - `startDate` igual a la ingresada o la actual
     - `endDate` igual a la ingresada o la del `Discount` anterior
-13. Crear instancias `ArticleDiscount` por cada uno de los artículos especificados.
-14. Crear instancias `DiscountTypeParameterValue` por cada uno de los parámetros indicados.
+12. Crear instancias `ArticleDiscount` por cada uno de los artículos especificados.
+13. Crear instancias `DiscountTypeParameterValue` por cada uno de los parámetros indicados.
 
 **Caminos alternativos:**
 * Si el usuario no se encuentra logueado
     - Retornar mensaje de error
-* Si el `id` no se corresponde con ningún `Discount` con `endDate` mayor a la actual
+* Si el `id` no se corresponde con ningún `Discount`
     - Retornar mensaje de error
 * Si `name` inválido o de longitud igual a 0.
     - Retornar mensaje de error
@@ -299,7 +297,7 @@ Authorization: Bearer token
 
 `404 NOT FOUND`
   - si no se encontró un `Article` de entre los de la lista o fue eliminado (state = `DELETED`)
-  - si no se encontró un `Discount` cuyo `id` sea el ingresado y su `endDate` posterior a la fecha actual
+  - si no se encontró un `Discount` cuyo `id` sea el ingresado
   - si no se encontró un `DiscountType` cuyo `id` sea `discountTypeId`
 
 ### CU5. Eliminar descuento

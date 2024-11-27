@@ -16,3 +16,7 @@ export interface CreateDiscountDTO {
   endDate?: Date;
   parameterValues?: ParameterValueDTO[]
 }
+
+export interface UpdateDiscountDTO extends CreateDiscountDTO{
+  id: string;
+}
