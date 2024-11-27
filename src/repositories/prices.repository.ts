@@ -1,21 +1,25 @@
 import { NotFound } from "../utils/exceptions";
 import { UpdatePriceDTO } from '../dtos/api-entities/prices.dto';
 import { Article, ArticlePrice, ArticleState } from "../models/models";
+import { createArticleWithState, updateArticleState } from "./articles.repository";
 
 export async function getMostRecentArticlePrice(articleId: string): Promise<number> {
   if (!articleId.trim()) {
     throw TypeError("Missing articleId parameter");
   }
 
-  const article = await Article.findOne({ articleId }).populate("stateId");
+  let article;
+
+  article = await Article.findOne({ articleId }).populate("stateId");
 
   if (!article) {
-    throw new NotFound("Article not found");
+    article = await createArticleWithState(articleId, 'UNTAXED');
+    throw new Error("Article price has not been set yet");
   }
 
   const articleState = await ArticleState.findById(article.stateId);
   if (!articleState || articleState.name !== "TAXED") {
-    throw new Error("Article state is not 'TAXED'");
+    throw new Error("Article price has not been set yet");
   }
 
   const today = new Date();
@@ -34,26 +38,14 @@ export async function getMostRecentArticlePrice(articleId: string): Promise<numb
 }
 
 export async function updateArticlePrice({ articleId, price, startDate }: UpdatePriceDTO): Promise<UpdatePriceDTO> {
-  // Validate existence of states
-  const articleState = await ArticleState.findOne({ name: 'TAXED' });
-
-  if (!articleState) {
-    throw new Error("Article state 'TAXED' not found");
-  }
 
   let article = await Article.findOne({ articleId });
 
   if (!article) {
     // Article doesn't exist, create a new one
-    article = new Article({
-      articleId,
-      stateId: articleState._id,
-    });
-    await article.save();
-  } else if (article.stateId !== articleState._id) {
-    // Article exists, update its state
-    article.stateId = articleState._id;
-    await article.save();
+    article = await createArticleWithState(articleId, 'TAXED');
+  } else {
+    article = await updateArticleState(articleId, 'TAXED');
   }
 
   const articlePrice = new ArticlePrice({

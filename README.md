@@ -92,17 +92,18 @@ Authorization: Bearer token
 
 **Camino normal:**
 1. Validar que `articleId` es un número mayor o igual a cero
+2. Validar existencia del árticulo mediante comunicación con el microservicio catálogo.
 2. Buscar `Article` en base de datos local con `articleId` igual al ingresado.
 3. Verificar que el `state` del artículo es `TAXED`
-3. Buscar `ArticlePrice` asociado al `Article` con mayor `startDate`.
+4. Buscar `ArticlePrice` asociado al `Article` con mayor `startDate`.
 
 **Caminos alternativos:**
 * si el usuario no se encuentra logueado
     - Retornar mensaje de error
 * Si no se incluyó un `articleId` válido
     - Retornar mensaje de error
-* Si no se encontró el artículo o `state` != `TAXED`
-    - Retornar mensaje de error
+* Si no se encontró el artículo o `state` != `TAXED` pero se validó existencia del artículo en el microservicio catálogo
+    - Crear instancia `Article` con estado `UNTAXED`
 * Si no se encontró el `ArticlePrice`
     - cambiar `state` a `UNTAXED`
     - Retornar mensaje de error
