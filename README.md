@@ -163,7 +163,7 @@ Authorization: Bearer token
 
 **Camino normal:**
 1. Validar que se incluyó un parámetro `name` de longitud mayor a 0.
-2. Validar que se incluyó un arreglo `articles` de longitud mayor a 1 y que cada artículo tiene un `id` y un `quantity` numéricos y mayores a cero.
+2. Si se incluyó un arreglo `articles` de longitud mayor a 1, validar que cada artículo tiene un `id` y un `quantity` numéricos y mayores a cero.
 3. Validar que se incluyó `discountTypeId` numérico mayor a cero.
 4. Si se incluyó un `startDate` en los parámetros:
     - Validar que fecha_actual <= `startDate`

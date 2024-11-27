@@ -23,7 +23,7 @@ export async function updatePrice(req: Request, res: Response) {
 
     await updateArticlePriceService({ articleId, price, startDate });
 
-    res.status(200).json({ articleId, price, startDate });
+    res.status(201).json({ articleId, price, startDate });
   } catch (error) {
     getErrorResponse(error, res);
     return;

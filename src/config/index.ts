@@ -19,6 +19,8 @@ export function getConfig(): Config {
     config = {
       port: process.env.SERVER_PORT || "3001",
       mongoPath: process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/test",
+      rabbitUrl: process.env.RABBIT_URL || "amqp://@localhost:5672",
+      discountsNotificationsQueue: process.env.DISCOUNTS_NOTIFICATIONS_QUEUE || "",
     }
   }
   return config;
@@ -27,4 +29,6 @@ export function getConfig(): Config {
 export interface Config {
   port: string;
   mongoPath: string;
+  rabbitUrl: string;
+  discountsNotificationsQueue: string;
 }

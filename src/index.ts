@@ -3,8 +3,11 @@ import { Config, getConfig } from "./config";
 import { initExpress } from "./app";
 import mongoose from "mongoose";
 import initialDataBaseConfig from "./config/initialDatabaseConfig";
+import { Rabbit } from "./rabbitmq/rabbitConfig";
 
 const conf: Config = getConfig();
+
+Rabbit.getInstance();
 
 // Print unhandled promises
 process.on("unhandledRejection", (reason, p) => {
