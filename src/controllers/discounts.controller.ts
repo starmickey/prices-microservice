@@ -31,7 +31,7 @@ export async function createDiscount(req: Request, res: Response) {
 
     await createDiscountService(params);
 
-    res.status(201).send({ message: "success" });
+    res.status(201).send({ message: "discount created", discount: params });
 
   } catch (error) {
     getErrorResponse(error, res);
