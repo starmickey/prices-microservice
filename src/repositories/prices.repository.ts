@@ -1,12 +1,7 @@
 import { NotFound } from "../utils/exceptions";
+import { UpdatePriceDTO } from '../dtos/api-entities/prices.dto';
 import { Article, ArticlePrice, ArticleState } from "../models/models";
 
-/**
- * Gets the price of the most recent ArticlePrice for a given article.
- * @param {string} articleId - The ID of the article.
- * @throws {NotFound | Error} If the article does not exist, its state is not 'TAXED', or no price is found.
- * @returns {Promise<number>} - The price of the most recent ArticlePrice.
- */
 export async function getMostRecentArticlePrice(articleId: string): Promise<number> {
   if (!articleId.trim()) {
     throw TypeError("Missing articleId parameter");
@@ -36,4 +31,38 @@ export async function getMostRecentArticlePrice(articleId: string): Promise<numb
   }
 
   return recentPrice.price;
+}
+
+export async function updateArticlePrice({ articleId, price, startDate }: UpdatePriceDTO): Promise<UpdatePriceDTO> {
+  // Validate existence of states
+  const articleState = await ArticleState.findOne({ name: 'TAXED' });
+
+  if (!articleState) {
+    throw new Error("Article state 'TAXED' not found");
+  }
+
+  let article = await Article.findOne({ articleId });
+
+  if (!article) {
+    // Article doesn't exist, create a new one
+    article = new Article({
+      articleId,
+      stateId: articleState._id,
+    });
+    await article.save();
+  } else if (article.stateId !== articleState._id) {
+    // Article exists, update its state
+    article.stateId = articleState._id;
+    await article.save();
+  }
+
+  const articlePrice = new ArticlePrice({
+    price,
+    articleId: article._id,
+    startDate,
+  });
+
+  await articlePrice.save();
+
+  return { articleId, price, startDate };
 }

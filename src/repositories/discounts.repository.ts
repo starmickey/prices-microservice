@@ -1,4 +1,4 @@
-import { CreateDiscountDTO, ParameterValueDTO } from "../dtos/api-entities/discounts.dto";
+import { CreateDiscountDTO, UpdateDiscountDTO, ParameterValueDTO } from "../dtos/api-entities/discounts.dto";
 import { Article, ArticleDiscount, DataType, Discount, DiscountType, DiscountTypeParameter, DiscountTypeParameterValue } from "../models/models";
 import { validateType } from "../utils/dataTypeValidator";
 import { BadRequest, NotFound } from "../utils/exceptions";
@@ -60,6 +60,23 @@ export async function createDiscount(params: CreateDiscountDTO) {
   ]);
 
   return discount._id;
+}
+
+export async function updateDiscount(params: UpdateDiscountDTO) {
+  const discount = await Discount.findById(params.id);
+
+  if (!discount) {
+    throw new NotFound(`Discount not found`);
+  }
+
+  const currentDate = new Date();
+
+  if (!discount.endDate || discount.endDate > currentDate) {
+    discount.endDate = currentDate;
+    await discount.save();
+  }
+
+  return await createDiscount(params);
 }
 
 interface ValidateDiscountParametersProps {

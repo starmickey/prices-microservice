@@ -1,6 +1,6 @@
-import { Article, ArticlePrice, ArticleState } from "../models/models";
+import { Article, ArticleState } from "../models/models";
 
-export default async function markArticleAsRemoved(articleId: string) {
+export async function markArticleAsRemoved(articleId: string) {
   const article = await Article.findOne({ articleId }).populate("stateId");
 
   if (!article) {

@@ -1,14 +1,13 @@
 import { Request, Response } from "express";
-import { updateArticlePriceService } from "../repositories/updateArticlePrice.repository";
 import getErrorResponse from "../utils/getErrorResponse";
-import { getMostRecentArticlePrice } from "../repositories/getMostRecentPrice.repository";
 import { GetArticlePriceSchema, UpdateArticlePriceSchema } from "../dtos/schemas/pricesSchemas";
 import { Unauthorized } from "../utils/exceptions";
 import { getArticleExists } from "../api/catalogApi";
-import markArticleAsRemoved from "../repositories/markArticleAsRemoved.repository";
 import { emitPriceUpdatedEvent } from "../rabbitmq/notificationsApi";
+import { markArticleAsRemoved } from "../repositories/articles.repository";
+import { getMostRecentArticlePrice, updateArticlePrice } from "../repositories/prices.repository";
 
-export async function getPrice(req: Request, res: Response) {
+export async function getPriceHandler(req: Request, res: Response) {
   try {
     const token = req.user.token;
 
@@ -34,7 +33,7 @@ export async function getPrice(req: Request, res: Response) {
   }
 }
 
-export async function updatePrice(req: Request, res: Response) {
+export async function updatePriceHandler(req: Request, res: Response) {
   try {
     const token = req.user.token;
 
@@ -52,7 +51,7 @@ export async function updatePrice(req: Request, res: Response) {
       return;
     }
 
-    await updateArticlePriceService({ articleId, price, startDate });
+    await updateArticlePrice({ articleId, price, startDate });
 
     emitPriceUpdatedEvent({ articleId, price, startDate });
 

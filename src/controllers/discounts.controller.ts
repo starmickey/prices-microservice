@@ -3,10 +3,9 @@ import { CreateDiscountSchema, UpdateDiscountSchema } from "../dtos/schemas/disc
 import getErrorResponse from "../utils/getErrorResponse";
 import { getArticleExists } from "../api/catalogApi";
 import { Unauthorized } from "../utils/exceptions";
-import { createDiscount as createDiscountService, validateDiscountParameters } from "../repositories/createDiscount.repository";
-import updateDiscountService from "../repositories/updateDiscount.repository";
+import { createDiscount, updateDiscount } from "../repositories/discounts.repository";
 
-export async function createDiscount(req: Request, res: Response) {
+export async function createDiscountHandler(req: Request, res: Response) {
   try {
     const params = CreateDiscountSchema.parse(req.body);
 
@@ -29,7 +28,7 @@ export async function createDiscount(req: Request, res: Response) {
       }
     }
 
-    const discountId = await createDiscountService(params);
+    const discountId = await createDiscount(params);
 
     res.status(201).send({ message: "discount created", discount: { discountId, ...params } });
 
@@ -38,7 +37,7 @@ export async function createDiscount(req: Request, res: Response) {
   }
 }
 
-export async function updateDiscount(req: Request, res: Response) {
+export async function updateDiscountHandler(req: Request, res: Response) {
   try {
     const params = UpdateDiscountSchema.parse(req.body);
 
@@ -61,7 +60,7 @@ export async function updateDiscount(req: Request, res: Response) {
       }
     }
 
-    await updateDiscountService(params);
+    await updateDiscount(params);
 
     res.status(201).send({ message: "discount updated", discount: params });
 
