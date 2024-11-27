@@ -4,20 +4,20 @@ import { Config, getConfig } from '../config';
 export class Rabbit {
   private static instance: Rabbit;
   private connection: Connection | null = null;
-  private catalogChannel: Channel | null = null;  
+  private notificationsChannel: Channel | null = null;
   private config: Config = getConfig();
-  
+
   private constructor() {
     this.connect();
   }
-  
+
   public static getInstance(): Rabbit {
     if (!Rabbit.instance) {
       Rabbit.instance = new Rabbit();
     }
     return Rabbit.instance;
   }
-  
+
   public async connect(): Promise<void> {
     try {
       this.connection = await amqp.connect(this.config.rabbitUrl);
@@ -35,20 +35,20 @@ export class Rabbit {
     if (!this.connection) {
       throw new Error('Rabbit connection failed');
     }
-    this.catalogChannel = await this.connection.createChannel();
-    await this.catalogChannel.assertQueue(this.config.discountsNotificationsQueue); // Connects with catalog microservice
+    this.notificationsChannel = await this.connection.createChannel();
+    await this.notificationsChannel.assertQueue(this.config.notificationsQueue); // Connects with catalog microservice
 
-     // Consumir los mensajes de la cola de solicitudes de entrega
-     this.catalogChannel.consume(this.config.discountsNotificationsQueue, ((msg: any) => console.log("RECEIVED", JSON.parse(msg.content.toString()))), { noAck: true });
+    // Consume channels
+    //  this.catalogChannel.consume(this.config.notificationsQueue, ((msg: any) => console.log("RECEIVED", JSON.parse(msg.content.toString()))), { noAck: true });
   }
 
   public async sendMessage(message: any, queue: string): Promise<void> {
-    if (!this.catalogChannel) {
+    if (!this.notificationsChannel) {
       throw new Error('Rabbit connection failed');
     }
     try {
       const messageBuffer = Buffer.from(JSON.stringify(message));
-      this.catalogChannel.sendToQueue(queue, messageBuffer);
+      this.notificationsChannel.sendToQueue(queue, messageBuffer);
       console.info(`--> Message sent to queue ${queue}`);
     } catch (err) {
       console.error(`Error sending message to RabbitMQ: ${err}`);

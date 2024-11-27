@@ -24,11 +24,12 @@ El microservicio de precios, como su nombre lo indica, permite gestionar los pre
 2. Validar que se incluyó en el cuerpo de la solicitud un `articleId` numérico mayor o igual a cero.
 3. Si se ingresó `startDate` 
     - Validar que fecha_actual <= `startDate` 
-4. Validar la existencia del artículo emitiendo `article_exist` al microservicio catálogo con `id`=`articleId` ingresado por parámetro y esperar la respuesta del microservicio.
+4. Validar la existencia del artículo consultando el microservicio catálogo.
 5. Crear instancia de `ArticlePrice` asociada a `Article` con:
     - `price` igual al incluido en el body.
     - `startDate` igual a la ingresada o en su defecto la actual.
 5. Actualizar `Article` con `state` = `TAXED` (sin importar cuál haya sido su estado anterior).
+6. Emitir evento `price_updated`
 
 **Caminos alternativos:**
 * Si el usuario no se encuentra logueado
@@ -71,36 +72,14 @@ Authorization: Bearer token
 
 **Interfaz asincrónica (Rabbit)**
 
-Emite y recibe `article_exist` para validar la existencia de artículos.
-
-`PUT rabbit/prices/article-exist`
+`PUT rabbit/price_updated`
 
 *Body*
 ```json
 {
-  "exchange": "prices",
-  "message": {
-    "articleId": "ArticleId",
-    "referenceId": "UserId"
-  },
-  "queue": "prices",
-  "type": "article-exist"
-}
-```
-
-`GET rabbit/article-exist`
-
-*Response*
-```json
-{
-  "exchange": "",
-  "message": {
-    "articleId": "ArticleId",
-    "referenceId": "UserId",
-    "valid": true
-  },
-  "queue": "",
-  "type": "article-exist"
+  "articleId": "123456",
+  "price": "1000",
+  "startDate": "2024-11-02 16:00:00.000",
 }
 ```
 
@@ -169,7 +148,7 @@ Authorization: Bearer token
     - Validar que fecha_actual <= `startDate`
 5. Si se incluyó un `endDate` en los parámetros:
     - Validar que `startDate` < `endDate`
-6. Validar existencia de artículos emitiendo `article_exist` al microservicio `Catalog` con `id` igual al ingresado por parámetros.
+6. Validar la existencia del artículo consultando el microservicio catálogo.
 7. Validar existencia de un `DiscountType` con `id`=`discountTypeId`. Al obtenerlo se recuperan los `DiscountTypeParameter` asociados.
 8. Validar que por cada `DiscountTypeParameter` se incluyó un `parameterValue` con `value` de tipo válido y `parameterId` numérico mayor a cero.
 9. Crear instancia `Discount` con `name` y `description` iguales a los ingresados y `discountType` igual al recuperado y con:
@@ -233,42 +212,6 @@ Authorization: Bearer token
 `404 NOT FOUND`
   - si no se encontró un `Article` de entre los de la lista o fue eliminado (state = `DELETED`)
   - si no se encontró un `Discount` cuyo `id` sea el ingresado y su `endDate` posterior a la fecha actual
-
-**Interfaz asincrónica (Rabbit)**
-
-Emite y recibe `article_exist` para validar la existencia de artículos.
-
-`PUT rabbit/prices/article-exist`
-
-*Body*
-```json
-{
-  "exchange": "prices",
-  "message": {
-    "articleId": "ArticleId",
-    "referenceId": "UserId"
-  },
-  "queue": "prices",
-  "type": "article-exist"
-}
-```
-
-`GET rabbit/article-exist`
-
-*Response*
-```json
-{
-  "exchange": "",
-  "message": {
-    "articleId": "ArticleId",
-    "referenceId": "UserId",
-    "valid": true
-  },
-  "queue": "",
-  "type": "article-exist"
-}
-```
-
 
 ### CU4. Modificar descuento
 
@@ -358,42 +301,6 @@ Authorization: Bearer token
   - si no se encontró un `Article` de entre los de la lista o fue eliminado (state = `DELETED`)
   - si no se encontró un `Discount` cuyo `id` sea el ingresado y su `endDate` posterior a la fecha actual
   - si no se encontró un `DiscountType` cuyo `id` sea `discountTypeId`
-
-**Interfaz asincrónica (Rabbit)**
-
-Emite y recibe `article_exist` para validar la existencia de artículos.
-
-`PUT rabbit/prices/article-exist`
-
-*Body*
-```json
-{
-  "exchange": "prices",
-  "message": {
-    "articleId": "ArticleId",
-    "referenceId": "UserId"
-  },
-  "queue": "prices",
-  "type": "article-exist"
-}
-```
-
-`GET rabbit/article-exist`
-
-*Response*
-```json
-{
-  "exchange": "",
-  "message": {
-    "articleId": "ArticleId",
-    "referenceId": "UserId",
-    "valid": true
-  },
-  "queue": "",
-  "type": "article-exist"
-}
-```
-
 
 ### CU5. Eliminar descuento
 
@@ -597,61 +504,6 @@ Authorization: Bearer token
     - calcular costo de carrito sin descuentos
 * Si se especificó un descuento y este no es aplicable
     - calcular costo de carrito sin aplicar este descuento
-
-**Interfaz asincrónica (Rabbit)**
-
-![Diagrama de interacciones de CU8](docs/diagrams/interacciones-cu8.png "Diagrama de interacciones de CU8")
-
-`GET rabbit/update_cost`
-
-*Body*
-```json
-{
-  "articles": [
-    {
-      "articleId": "string",
-      "quantity": 10
-    }
-  ],
-  "discounts": [
-    {
-      "id": "123456",
-      "parameterValues": {
-        "parameterId": "123456",
-        "value": "CODIGO_PARA_COMBO",
-      }
-    }
-  ],
-  "cartId": "string",
-  "orderId": "string"
-}
-```
-
-`PUT rabbit/cost_updated`
-
-*Body*
-
-```json
-{
-  "articles": [
-    {
-      "id": "123456",
-      "quantity": "3",
-      "price": "123456",
-      "totalAmount": "123456",
-      "discountId": "123456"
-    }
-  ],
-  "totalAmount": "123456",
-  "discounts": [
-    {
-      "id": "123456",
-      "name": "Navidad con cupón",
-      "description": "Descuento por 2 pan dulces, una coca y un fernet con cupón.",
-    }
-  ]
-}
-```
 
 ## Modelo de datos
 

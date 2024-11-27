@@ -20,7 +20,7 @@ export function getConfig(): Config {
       port: process.env.SERVER_PORT || "3001",
       mongoPath: process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/test",
       rabbitUrl: process.env.RABBIT_URL || "amqp://@localhost:5672",
-      discountsNotificationsQueue: process.env.DISCOUNTS_NOTIFICATIONS_QUEUE || "",
+      notificationsQueue: process.env.NOTIFICATIONS_QUEUE || "",
       catalogUrl: process.env.CATALOG_SERVICE_BASE_URL || "",
       authUrl: process.env.AUTH_SERVICE_BASE_URL || ""
     }
@@ -32,7 +32,7 @@ export interface Config {
   port: string;
   mongoPath: string;
   rabbitUrl: string;
-  discountsNotificationsQueue: string;
+  notificationsQueue: string;
   catalogUrl: string;
   authUrl: string;
 }

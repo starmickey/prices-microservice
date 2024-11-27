@@ -6,6 +6,7 @@ import { GetArticlePriceSchema, UpdateArticlePriceSchema } from "../dtos/schemas
 import { Unauthorized } from "../utils/exceptions";
 import { getArticleExists } from "../api/catalogApi";
 import markArticleAsRemoved from "../repositories/markArticleAsRemoved.repository";
+import { emitPriceUpdatedEvent } from "../rabbitmq/notificationsApi";
 
 export async function getPrice(req: Request, res: Response) {
   try {
@@ -39,6 +40,8 @@ export async function updatePrice(req: Request, res: Response) {
 
     await updateArticlePriceService({ articleId, price, startDate });
 
+    emitPriceUpdatedEvent({ articleId, price, startDate });
+    
     res.status(201).json({ articleId, price, startDate });
 
   } catch (error) {
