@@ -79,6 +79,24 @@ export async function updateDiscount(params: UpdateDiscountDTO) {
   return await createDiscount(params);
 }
 
+export async function deleteDiscount(discountId: string) {
+  const discount = await Discount.findById(discountId);
+
+  if (!discount) {
+    throw new NotFound(`Discount not found`);
+  }
+
+  const currentDate = new Date();
+
+  if (!discount.endDate || discount.endDate > currentDate) {
+    discount.endDate = currentDate;
+    await discount.save();
+    return;
+  }
+
+  throw new BadRequest(`Discount already disabled or expired`);
+}
+
 interface ValidateDiscountParametersProps {
   discountTypeId: string;
   parameterValues?: ParameterValueDTO[]

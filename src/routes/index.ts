@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getPriceHandler, updatePriceHandler } from "../controllers/prices.controller";
-import { createDiscountHandler, updateDiscountHandler } from "../controllers/discounts.controller";
+import { createDiscountHandler, deleteDiscountHandler, updateDiscountHandler } from "../controllers/discounts.controller";
 import { validateUserSignIn } from "../middlewares/auth.middleware";
 
 export function initRouter() {
@@ -13,6 +13,8 @@ export function initRouter() {
   router.route("/v1/discounts/create").post(validateUserSignIn, createDiscountHandler);
 
   router.route("/v1/discounts/update").post(validateUserSignIn, updateDiscountHandler);
+
+  router.route("/v1/discounts/delete").post(validateUserSignIn, deleteDiscountHandler);
 
   return router;
 }

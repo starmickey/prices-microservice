@@ -78,3 +78,9 @@ export const UpdateDiscountSchema = DiscountSchema
     (data) => !data.endDate || !data.startDate || data.endDate > data.startDate,
     { message: "endDate must be after startDate", path: ["endDate"] }
   );
+
+export const DeleteDiscountSchema = z.object({
+  id: z
+    .string({ required_error: "Discount id is missing", invalid_type_error: "Discount id invalid. It must be a string" })
+    .min(1, { message: "Discount id must have at least one character" })
+})

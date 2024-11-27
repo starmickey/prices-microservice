@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import { CreateDiscountSchema, UpdateDiscountSchema } from "../dtos/schemas/discountsSchemas";
+import { CreateDiscountSchema, DeleteDiscountSchema, UpdateDiscountSchema } from "../dtos/schemas/discountsSchemas";
 import getErrorResponse from "../utils/getErrorResponse";
 import { getArticleExists } from "../api/catalogApi";
 import { Unauthorized } from "../utils/exceptions";
-import { createDiscount, updateDiscount } from "../repositories/discounts.repository";
+import { createDiscount, deleteDiscount, updateDiscount } from "../repositories/discounts.repository";
 
 export async function createDiscountHandler(req: Request, res: Response) {
   try {
@@ -60,9 +60,22 @@ export async function updateDiscountHandler(req: Request, res: Response) {
       }
     }
 
-    await updateDiscount(params);
+    const newDiscountId = await updateDiscount(params);
 
-    res.status(201).send({ message: "discount updated", discount: params });
+    res.status(201).send({ message: "discount updated", discount: { ...params, discountId: newDiscountId } });
+
+  } catch (error) {
+    getErrorResponse(error, res);
+  }
+}
+
+export async function deleteDiscountHandler(req: Request, res: Response) {
+  try {
+    const { id } = DeleteDiscountSchema.parse(req.body);
+    
+    await deleteDiscount(id);
+
+    res.status(201).send({ message: "discount removed" });
 
   } catch (error) {
     getErrorResponse(error, res);
