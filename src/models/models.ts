@@ -51,15 +51,15 @@ const DiscountTypeParameterSchema = new Schema({
   name: { type: String, required: true },
   deleteDate: { type: Date, default: null },
   discountTypeId: { type: Schema.Types.ObjectId, ref: 'DiscountType', required: true }, // Foreign key reference
-  type: { type: Schema.Types.ObjectId, ref: 'Discount', required: true }, // Foreign key reference
+  type: { type: Schema.Types.ObjectId, ref: 'DataType', required: true }, // Foreign key reference
 }, { timestamps: true });
 
 // DiscountTypeParameterValue Schema
 const DiscountTypeParameterValueSchema = new Schema({
   value: { type: String, required: true },
   deleteDate: { type: Date, default: null },
-  discountTypeParameterId: { type: Schema.Types.ObjectId, ref: 'DiscountTypeParameter', required: true }, // Foreign key reference
-  discountId: { type: Schema.Types.ObjectId, ref: 'DataTypeSchema', required: true }, // Foreign key reference
+  discountTypeParameterId: { type: Schema.Types.ObjectId, ref: 'DiscountTypeParameter', required: true },
+  discountId: { type: Schema.Types.ObjectId, ref: 'Discount', required: true }, 
 }, { timestamps: true });
 
 // DataType Schema

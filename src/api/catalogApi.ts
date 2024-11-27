@@ -13,6 +13,8 @@ export async function getArticleExists(articleId: string, token: string): Promis
     })
     .then((_) => true) // If the call succeds, the article exists
     .catch((error) => {
+      console.error(error);
+
       if (error.response) {
         const { status, data } = error.response;
 
@@ -24,9 +26,9 @@ export async function getArticleExists(articleId: string, token: string): Promis
           throw new APIError("Invalid article id", 400);
         }
 
-        throw new APIError(data?.message || "Unknown error occurred", status);
+        throw new APIError(data?.message || "Couldn't retrieve the article", status);
       }
 
-      throw new APIError(error.message || "Network error occurred", 500);
+      throw new APIError(error.message || "Couldn't retrieve the article", 500);
     });
 }

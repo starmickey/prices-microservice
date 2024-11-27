@@ -20,3 +20,9 @@ export class Unauthorized extends APIError {
     super("Unauthorized", 401);
   }
 }
+
+export class BadRequest extends APIError {
+  constructor(message: string) {
+    super(`Bad Request: ${message}`, 400);
+  }
+}

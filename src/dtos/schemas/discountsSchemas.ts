@@ -16,11 +16,14 @@ export const CreateDiscountSchema = z.object({
         id: z
           .string({ required_error: "An article id is missing", invalid_type_error: "Article id invalid type. It must be a string" })
           .min(1, { message: "Article ids must have at least one character" }),
+        price: z
+          .number({ required_error: "Price is missing", invalid_type_error: "Price must be a number" })
+          .gt(0, { message: "Price must be greater than zero" }),
         quantity: z
           .number({ required_error: "Quantity is missing", invalid_type_error: "Quantity must be a number" })
           .gt(0, { message: "Quantity must be greater than zero" }),
-      }, { required_error: "Articles array is missing", invalid_type_error: "Article invalid" }))
-    .min(1, { message: "Provide at least one article" }),
+      }, { invalid_type_error: "Article invalid" }))
+    .optional(),
   discountTypeId: z
     .string({ required_error: "DiscountTypeId is missing", invalid_type_error: "DiscountTypeId must be a string" })
     .min(1, { message: "DiscountTypeId must have at least one character" }),
@@ -31,6 +34,7 @@ export const CreateDiscountSchema = z.object({
       (date) => !date || date >= currentDate,
       { message: "startDate must be a future date" }
     )
+    .optional()
     .default(() => currentDate),
   endDate: z
     .preprocess((val) => (val ? new Date(val as string) : undefined), z.date().optional())
@@ -44,7 +48,14 @@ export const CreateDiscountSchema = z.object({
       id: z
         .string({ required_error: "A parameter id is missing", invalid_type_error: "A parameter id invalid type. It must be a string" })
         .min(1, { message: "Parameters ids must have at least one character" }),
-      value: z.string()
+      value: z
+        .union([z.string(), z.number()], { required_error: "A parameter value is missing", invalid_type_error: "Every parameterValues value must be a string or a number" })
+        .refine(value => typeof value === "string" || typeof value === "number", {
+          message: "Every parameter value must be a string or a number",
+        })
+        .refine(value => typeof value === "string" ? value.length > 0 : true, {
+          message: "value must not be an empty string"
+        })
     })
   )
     .optional()
