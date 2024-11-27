@@ -1,5 +1,5 @@
 import { NotFound } from "../utils/exceptions";
-import { Article, ArticlePrice, ArticleState, Discount, DiscountType, DiscountTypeParameter } from "../models/models";
+import { Article, ArticlePrice, ArticleState } from "../models/models";
 
 /**
  * Gets the price of the most recent ArticlePrice for a given article.
@@ -36,46 +36,4 @@ export async function getMostRecentArticlePrice(articleId: string): Promise<numb
   }
 
   return recentPrice.price;
-}
-
-interface CreateDiscountProps {
-  name: string;
-  description: string;
-  articles: {
-    id: string;
-    quantity: number;
-  }[],
-  discountTypeId: string;
-  startDate: Date;
-  endDate: Date | undefined;
-  parameterValues: {
-    id: string;
-    value: string;
-  }[]
-}
-
-export async function createDiscount() {
-  
-}
-
-interface ValidateDiscountParametersProps {
-  discountTypeId: string;
-  parameterValues: {
-    id: string;
-    value: string;
-  }[]
-}
-
-export function validateDiscountParameters({ discountTypeId, parameterValues}: CreateDiscountProps) {
-  const discountType = DiscountType.findOne({ id: discountTypeId });
-
-  if(!discountType) {
-    throw new NotFound("DiscountType not found");
-  }
-
-  const discountTypeParameters = DiscountTypeParameter.find({ discountTypeId });
-
-  
-
-
 }
