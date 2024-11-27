@@ -13,7 +13,6 @@ export async function getPrice(req: Request, res: Response) {
     res.status(200).send({ articleId, price });
   } catch (error) {
     getErrorResponse(error, res);
-    return;
   }
 }
 

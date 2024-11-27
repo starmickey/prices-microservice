@@ -21,6 +21,8 @@ export function getConfig(): Config {
       mongoPath: process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/test",
       rabbitUrl: process.env.RABBIT_URL || "amqp://@localhost:5672",
       discountsNotificationsQueue: process.env.DISCOUNTS_NOTIFICATIONS_QUEUE || "",
+      catalogUrl: process.env.CATALOG_SERVICE_BASE_URL || "",
+      authUrl: process.env.AUTH_SERVICE_BASE_URL || ""
     }
   }
   return config;
@@ -31,4 +33,6 @@ export interface Config {
   mongoPath: string;
   rabbitUrl: string;
   discountsNotificationsQueue: string;
+  catalogUrl: string;
+  authUrl: string;
 }

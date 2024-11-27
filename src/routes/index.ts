@@ -1,15 +1,16 @@
 import { Router } from "express";
-import createDiscount from "./createDiscount.route";
 import { getPrice, updatePrice } from "../controllers/prices.controller";
+import { createDiscount } from "../controllers/discounts.controller";
+import { validateUserSignIn } from "../middlewares/auth.middleware";
 
 export function initRouter() {
   const router = Router();
   
-  router.route("/v1/prices").get(getPrice);
+  router.route("/v1/prices").get(validateUserSignIn, getPrice);
   
-  router.route("/v1/prices/update").post(updatePrice);
+  router.route("/v1/prices/update").post(validateUserSignIn, updatePrice);
   
-  router.route("/v1/discounts/create").post(createDiscount);
+  router.route("/v1/discounts/create").post(validateUserSignIn, createDiscount);
 
   return router;
 }
