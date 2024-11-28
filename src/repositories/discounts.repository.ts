@@ -97,16 +97,44 @@ export async function deleteDiscount(discountId: string) {
   throw new BadRequest(`Discount already disabled or expired`);
 }
 
-export async function getValidDiscounts() {
+interface Criteria {
+  articleId?: string;
+}
+
+export async function getValidDiscounts(criteria?: Criteria) {
   const currentDate = new Date();
 
-  const discounts = await Discount.find({
+  // Get valid discount ids when article is present
+  const articleDiscountFilter: any = {};
+
+  if (criteria?.articleId) {
+    const article = await Article.findOne({ articleId: criteria.articleId });
+
+    if(!article) {
+      throw new NotFound("No discounts were found for this article");
+    }
+
+    articleDiscountFilter.articleId = article._id;
+  }
+
+  const articleDiscounts = await ArticleDiscount.find(articleDiscountFilter).select("discountId articleId").populate("articleId");
+  const validDiscountIds = articleDiscounts.map(ad => ad.discountId);
+
+  // Create filter discount
+  const discountFilter: any = {
     startDate: { $gt: currentDate },
     $or: [
       { endDate: { $lt: currentDate } }, // Expired discounts
       { endDate: null }, // Discounts with no end date
     ],
-  })
+  };
+
+  if (criteria?.articleId) {
+    discountFilter._id = { $in: validDiscountIds };
+  }
+
+  // Get all of the discounts params
+  const discounts = await Discount.find(discountFilter).select("name description startDate endDate discountTypeId");
 
   const discountIds = discounts.map(d => d._id);
   const discountTypeIds = discounts.map(d => d.discountTypeId);
@@ -115,14 +143,18 @@ export async function getValidDiscounts() {
     discountTypes,
     discountTypeParameters,
     discountTypeParameterValues,
-    articleDiscounts
   ] = await Promise.all([
-    DiscountType.find({ _id: { $in: discountTypeIds } }),
+    DiscountType.find({ _id: { $in: discountTypeIds } }).select("name description"),
     DiscountTypeParameter.find({ discountTypeId: { $in: discountTypeIds } }).populate("type"),
-    DiscountTypeParameterValue.find({ discountId: { $in: discountIds } }),
-    ArticleDiscount.find({ discountId: { $in: discountIds } })
+    DiscountTypeParameterValue.find({ discountId: { $in: discountIds } })
   ]);
 
+  // Get articleDiscounts even when articleId is not in criteria
+  const filteredArticleDiscounts = criteria?.articleId
+    ? articleDiscounts.filter(ad => validDiscountIds.includes(ad.discountId))
+    : await ArticleDiscount.find({ discountId: { $in: discountIds } }).populate("articleId");
+
+  // Map to DTOs
   const dtos: DiscountDTO[] = discounts.map(discount => {
     const dType = discountTypes.find(type => type._id.equals(discount.discountTypeId));
 
@@ -132,14 +164,14 @@ export async function getValidDiscounts() {
 
     const dParams = discountTypeParameters.filter(param => param.discountTypeId.equals(dType._id));
     const dValues = discountTypeParameterValues.filter(value => value.discountId.equals(discount._id));
-    const articles = articleDiscounts.filter(art => art.discountId.equals(discount._id));
+    const articles = filteredArticleDiscounts.filter(art => art.discountId.equals(discount._id));
 
     return {
       id: String(discount.id),
       name: discount.name,
       description: discount.description || "",
       articles: articles.map(a => ({
-        id: String(a.id),
+        id: String(a.articleId instanceof Article ? a.articleId.articleId : ""),
         price: a.price,
         quantity: a.quantity,
       })),
@@ -151,13 +183,13 @@ export async function getValidDiscounts() {
           id: String(param.id),
           name: param.name,
           dataTypeName: param.type instanceof DataType ? param.type.name : "",
-          value: dValues.find(value => value.discountTypeParameterId.equals(param._id))?.value || ""
-        }))
+          value: dValues.find(value => value.discountTypeParameterId.equals(param._id))?.value || "",
+        })),
       },
       startDate: discount.startDate,
       endDate: discount.endDate,
-    }
-  })
+    };
+  });
 
   return dtos;
 }

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ArticleSchema } from "./articles.schemas";
 
 const currentDate = new Date();
 
@@ -84,3 +85,7 @@ export const DeleteDiscountSchema = z.object({
     .string({ required_error: "Discount id is missing", invalid_type_error: "Discount id invalid. It must be a string" })
     .min(1, { message: "Discount id must have at least one character" })
 })
+
+export const GetArticleDiscountSchema = z.object({
+  articleId: ArticleSchema.optional()
+});

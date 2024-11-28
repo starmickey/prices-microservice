@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
-import { CreateDiscountSchema, DeleteDiscountSchema, UpdateDiscountSchema } from "../dtos/schemas/discountsSchemas";
+import { CreateDiscountSchema, DeleteDiscountSchema, GetArticleDiscountSchema, UpdateDiscountSchema } from "../dtos/schemas/discountsSchemas";
 import getErrorResponse from "../utils/getErrorResponse";
 import { getArticleExists } from "../api/catalogApi";
 import { Unauthorized } from "../utils/exceptions";
 import { createDiscount, deleteDiscount, getValidDiscounts, updateDiscount } from "../repositories/discounts.repository";
+import { updateArticleState } from "../repositories/articles.repository";
 
 export async function createDiscountHandler(req: Request, res: Response) {
   try {
@@ -72,7 +73,7 @@ export async function updateDiscountHandler(req: Request, res: Response) {
 export async function deleteDiscountHandler(req: Request, res: Response) {
   try {
     const { id } = DeleteDiscountSchema.parse(req.body);
-    
+
     await deleteDiscount(id);
 
     res.status(201).send({ message: "discount removed" });
@@ -84,10 +85,42 @@ export async function deleteDiscountHandler(req: Request, res: Response) {
 
 export async function getValidDiscountsHandler(req: Request, res: Response) {
   try {
-    const discounts = await getValidDiscounts();
+    const token = req.user.token;
+
+    const criteria = GetArticleDiscountSchema.parse(req.query);
+
+    if (criteria.articleId) {
+      const articleExists = await getArticleExists(criteria.articleId, token);
+
+      if (!articleExists) {
+        updateArticleState(criteria.articleId, 'DELETED');
+        res.status(404).json({ error: "Article not found" });
+        return;
+      }
+    }
+
+    const discounts = await getValidDiscounts(criteria);
 
     res.status(200).send({ discounts });
   } catch (error) {
     getErrorResponse(error, res);
   }
 }
+
+// export async function getArticleValidDiscountsHandler(req: Request, res: Response) {
+//   try {
+//     const token = req.user.token;
+
+//     if (!token) {
+//       throw new Unauthorized();
+//     }
+
+
+//     const discounts = await getArticleValidDiscounts(articleId);
+
+//     res.status(200).send({ discounts });
+
+//   } catch (error) {
+//     getErrorResponse(error, res);
+//   }
+// }
