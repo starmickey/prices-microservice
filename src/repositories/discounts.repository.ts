@@ -1,4 +1,4 @@
-import { CreateDiscountDTO, UpdateDiscountDTO, ParameterValueDTO } from "../dtos/api-entities/discounts.dto";
+import { CreateDiscountDTO, UpdateDiscountDTO, ParameterValueDTO, DiscountDTO } from "../dtos/api-entities/discounts.dto";
 import { Article, ArticleDiscount, DataType, Discount, DiscountType, DiscountTypeParameter, DiscountTypeParameterValue } from "../models/models";
 import { validateType } from "../utils/dataTypeValidator";
 import { BadRequest, NotFound } from "../utils/exceptions";
@@ -26,7 +26,7 @@ export async function createDiscount(params: CreateDiscountDTO) {
     description: params.description || "",
     startDate: params.startDate || new Date(),
     endDate: params.endDate || null,
-    discountType: params.discountTypeId,
+    discountTypeId: params.discountTypeId,
   });
 
   await discount.save();
@@ -95,6 +95,71 @@ export async function deleteDiscount(discountId: string) {
   }
 
   throw new BadRequest(`Discount already disabled or expired`);
+}
+
+export async function getValidDiscounts() {
+  const currentDate = new Date();
+
+  const discounts = await Discount.find({
+    startDate: { $gt: currentDate },
+    $or: [
+      { endDate: { $lt: currentDate } }, // Expired discounts
+      { endDate: null }, // Discounts with no end date
+    ],
+  })
+
+  const discountIds = discounts.map(d => d._id);
+  const discountTypeIds = discounts.map(d => d.discountTypeId);
+
+  const [
+    discountTypes,
+    discountTypeParameters,
+    discountTypeParameterValues,
+    articleDiscounts
+  ] = await Promise.all([
+    DiscountType.find({ _id: { $in: discountTypeIds } }),
+    DiscountTypeParameter.find({ discountTypeId: { $in: discountTypeIds } }).populate("type"),
+    DiscountTypeParameterValue.find({ discountId: { $in: discountIds } }),
+    ArticleDiscount.find({ discountId: { $in: discountIds } })
+  ]);
+
+  const dtos: DiscountDTO[] = discounts.map(discount => {
+    const dType = discountTypes.find(type => type._id.equals(discount.discountTypeId));
+
+    if (!dType) {
+      throw new Error(`Discount Type invalid: ${discount.discountTypeId} or not found`);
+    }
+
+    const dParams = discountTypeParameters.filter(param => param.discountTypeId.equals(dType._id));
+    const dValues = discountTypeParameterValues.filter(value => value.discountId.equals(discount._id));
+    const articles = articleDiscounts.filter(art => art.discountId.equals(discount._id));
+
+    return {
+      id: String(discount.id),
+      name: discount.name,
+      description: discount.description || "",
+      articles: articles.map(a => ({
+        id: String(a.id),
+        price: a.price,
+        quantity: a.quantity,
+      })),
+      discountType: {
+        id: String(dType.id),
+        name: dType.name,
+        description: dType.description || "",
+        parameters: dParams.map(param => ({
+          id: String(param.id),
+          name: param.name,
+          dataTypeName: param.type instanceof DataType ? param.type.name : "",
+          value: dValues.find(value => value.discountTypeParameterId.equals(param._id))?.value || ""
+        }))
+      },
+      startDate: discount.startDate,
+      endDate: discount.endDate,
+    }
+  })
+
+  return dtos;
 }
 
 interface ValidateDiscountParametersProps {

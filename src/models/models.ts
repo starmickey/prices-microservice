@@ -28,7 +28,7 @@ const DiscountSchema = new Schema({
   description: { type: String },
   startDate: { type: Date, required: true },
   endDate: { type: Date, default: null },
-  discountType: { type: String, required: true }, // Example: 'FIXED', 'PERCENTAGE'
+  discountTypeId: { type: Schema.Types.ObjectId, ref: 'Article', required: true }, // Foreign key reference
 }, { timestamps: true });
 
 // ArticleDiscount Schema

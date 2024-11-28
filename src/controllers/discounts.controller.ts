@@ -3,7 +3,7 @@ import { CreateDiscountSchema, DeleteDiscountSchema, UpdateDiscountSchema } from
 import getErrorResponse from "../utils/getErrorResponse";
 import { getArticleExists } from "../api/catalogApi";
 import { Unauthorized } from "../utils/exceptions";
-import { createDiscount, deleteDiscount, updateDiscount } from "../repositories/discounts.repository";
+import { createDiscount, deleteDiscount, getValidDiscounts, updateDiscount } from "../repositories/discounts.repository";
 
 export async function createDiscountHandler(req: Request, res: Response) {
   try {
@@ -77,6 +77,16 @@ export async function deleteDiscountHandler(req: Request, res: Response) {
 
     res.status(201).send({ message: "discount removed" });
 
+  } catch (error) {
+    getErrorResponse(error, res);
+  }
+}
+
+export async function getValidDiscountsHandler(req: Request, res: Response) {
+  try {
+    const discounts = await getValidDiscounts();
+
+    res.status(200).send({ discounts });
   } catch (error) {
     getErrorResponse(error, res);
   }
