@@ -504,6 +504,62 @@ Authorization: Bearer token
 * Si se especificó un descuento y este no es aplicable
     - calcular costo de carrito sin aplicar este descuento
 
+**Interfaz REST**
+
+`POST calculate`
+
+*Headers*  
+Authorization: Bearer token
+
+*Body*
+```json
+{
+  "articles": [
+    {
+      "articleId": "string",
+      "quantity": 10
+    }
+  ],
+  "discounts": [
+    {
+      "id": "123456",
+      "parameters": [
+        {
+          "parameterId": "123456",
+          "value": "CODIGO_PARA_COMBO",
+        }
+      ]
+    }
+  ],
+}
+```
+
+*Response*
+
+`200 OK` si éxito  
+
+```json
+{
+  "articles": [
+    {
+      "id": "123456",
+      "quantity": "3",
+      "totalAmount": "123456",
+    }
+  ],
+  "totalAmount": "123456",
+  "discount": [
+    {
+      "id": "123456",
+      "name": "Navidad con cupón",
+      "description": "Descuento por 2 pan dulces, una coca y un fernet con cupón.",
+    }
+  ]
+}
+```
+
+`404 NOT FOUND` si no se encontró algún artículo o descuento
+
 ## Modelo de datos
 
 ![Diagrama de clases](docs/diagrams/clases.png "Diagrama de clases")

@@ -1,4 +1,3 @@
-import { NotFound } from "../utils/exceptions";
 import { UpdatePriceDTO } from '../dtos/api-entities/prices.dto';
 import { Article, ArticlePrice, ArticleState } from "../models/models";
 import { createArticleWithState, updateArticleState } from "./articles.repository";

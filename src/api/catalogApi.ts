@@ -26,9 +26,9 @@ export async function getArticleExists(articleId: string, token: string): Promis
           throw new APIError("Invalid article id", 400);
         }
 
-        throw new APIError(data?.message || "Couldn't retrieve the article", status);
+        throw new APIError(data?.message || "Couldn't retrieve the article from catalog", status);
       }
 
-      throw new APIError(error.message || "Couldn't retrieve the article", 500);
+      throw new APIError(error.message || "Couldn't retrieve the article from catalog", 500);
     });
 }

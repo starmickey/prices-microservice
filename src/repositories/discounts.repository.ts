@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import { CreateDiscountDTO, UpdateDiscountDTO, ParameterValueDTO, DiscountDTO } from "../dtos/api-entities/discounts.dto";
 import { Article, ArticleDiscount, DataType, Discount, DiscountType, DiscountTypeParameter, DiscountTypeParameterValue } from "../models/models";
 import { validateType } from "../utils/dataTypeValidator";
@@ -97,11 +98,11 @@ export async function deleteDiscount(discountId: string) {
   throw new BadRequest(`Discount already disabled or expired`);
 }
 
-interface Criteria {
+export interface GetValidDiscountsCriteria {
   articleId?: string;
 }
 
-export async function getValidDiscounts(criteria?: Criteria) {
+export async function getValidDiscounts(criteria?: GetValidDiscountsCriteria) {
   const currentDate = new Date();
 
   // Get valid discount ids when article is present
@@ -122,9 +123,9 @@ export async function getValidDiscounts(criteria?: Criteria) {
 
   // Create filter discount
   const discountFilter: any = {
-    startDate: { $gt: currentDate },
+    startDate: { $lte: currentDate },
     $or: [
-      { endDate: { $lt: currentDate } }, // Expired discounts
+      { endDate: { $gt: currentDate } }, // Expired discounts
       { endDate: null }, // Discounts with no end date
     ],
   };
@@ -194,6 +195,7 @@ export async function getValidDiscounts(criteria?: Criteria) {
   return dtos;
 }
 
+
 interface ValidateDiscountParametersProps {
   discountTypeId: string;
   parameterValues?: ParameterValueDTO[]
@@ -242,4 +244,81 @@ export async function validateDiscountParameters({
 
     validateType(providedValue, expectedType);
   });
+}
+
+export async function getDiscountsWithoutArticles() {
+  const currentDate = new Date(); // Get the current date and time
+
+  const discountsWithoutArticles = await Discount.aggregate([
+    {
+      $lookup: {
+        from: "articlediscounts", // Collection name of ArticleDiscount
+        localField: "_id",
+        foreignField: "discountId",
+        as: "relatedArticles",
+      },
+    },
+    {
+      $match: {
+        relatedArticles: { $size: 0 }, // Filter discounts with no related articles
+        startDate: { $lte: currentDate }, // Discount's startDate should have passed
+        $or: [
+          { endDate: { $gte: currentDate } }, // Discount's endDate should be in the future or null
+          { endDate: { $exists: false } }, // Discounts with no endDate
+        ],
+      },
+    },
+    {
+      $project: {
+        name: 1,
+        description: 1,
+        startDate: 1,
+        endDate: 1,
+        discountTypeId: 1,
+      },
+    },
+  ]);
+
+  return discountsWithoutArticles;
+}
+
+export async function findArticleDiscounts(filter: any) {
+  return ArticleDiscount.find(filter).select("discountId articleId").populate("articleId");
+}
+
+export async function findValidDiscounts(filter: any) {
+  const currentDate = new Date();
+
+  const discountFilter: any = {
+    startDate: { $lte: currentDate },
+    $or: [
+      { endDate: { $gt: currentDate } },
+      { endDate: null },
+    ],
+    ...filter
+  };
+
+  return Discount.find(discountFilter).select("name description startDate endDate discountTypeId");
+}
+
+export async function findDiscountTypes(discountTypeIds: Types.ObjectId[]) {
+  const discountType = DiscountType.find({ id: { $in: discountTypeIds } }).select("name description");
+
+  if(!discountType) {
+    throw "DiscountType not found";
+  }
+
+  return discountType;
+}
+
+export async function findDiscountTypeParameters(discountTypeIds: Types.ObjectId[]) {
+  return DiscountTypeParameter.find({ discountTypeId: { $in: discountTypeIds } }).populate("type");
+}
+
+export async function findDiscountTypeParameterValues(discountIds: Types.ObjectId[]) {
+  return DiscountTypeParameterValue.find({ discountId: { $in: discountIds } });
+}
+
+export async function findFilteredArticleDiscounts(discountIds: Types.ObjectId[]) {
+  return ArticleDiscount.find({ discountId: { $in: discountIds } }).populate("articleId");
 }

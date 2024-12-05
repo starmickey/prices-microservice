@@ -3,8 +3,10 @@ import { CreateDiscountSchema, DeleteDiscountSchema, GetArticleDiscountSchema, U
 import getErrorResponse from "../utils/getErrorResponse";
 import { getArticleExists } from "../api/catalogApi";
 import { Unauthorized } from "../utils/exceptions";
-import { createDiscount, deleteDiscount, getValidDiscounts, updateDiscount } from "../repositories/discounts.repository";
+import { deleteDiscount, getValidDiscounts } from "../repositories/discounts.repository";
 import { updateArticleState } from "../repositories/articles.repository";
+import createDiscountService from "../services/discounts/createDiscountService";
+import updateDiscountService from "../services/discounts/updateDiscountService";
 
 export async function createDiscountHandler(req: Request, res: Response) {
   try {
@@ -29,9 +31,9 @@ export async function createDiscountHandler(req: Request, res: Response) {
       }
     }
 
-    const discountId = await createDiscount(params);
+    const discount = await createDiscountService(params);
 
-    res.status(201).send({ message: "discount created", discount: { discountId, ...params } });
+    res.status(201).send({ message: "discount created", discount });
 
   } catch (error) {
     getErrorResponse(error, res);
@@ -61,9 +63,9 @@ export async function updateDiscountHandler(req: Request, res: Response) {
       }
     }
 
-    const newDiscountId = await updateDiscount(params);
+    const discount = await updateDiscountService(params);
 
-    res.status(201).send({ message: "discount updated", discount: { ...params, discountId: newDiscountId } });
+    res.status(201).send({ message: "discount updated", discount });
 
   } catch (error) {
     getErrorResponse(error, res);
