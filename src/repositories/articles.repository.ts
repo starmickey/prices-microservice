@@ -28,7 +28,7 @@ export async function updateArticleState(articleId: string, state: string) {
     throw new NotFound(`Article not found`)
   }
 
-  const articleState = await ArticleState.findOne({ name: state });
+  const articleState = await ArticleState.findOne({ name: state }).select("id");
 
   if (!articleState) {
     throw new Error(`Article state ${state} not found`);

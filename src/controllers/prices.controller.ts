@@ -4,23 +4,34 @@ import { GetArticlePriceSchema, UpdateArticlePriceSchema } from "../dtos/schemas
 import { Unauthorized } from "../utils/exceptions";
 import { getArticleExists } from "../api/catalogApi";
 import { emitPriceUpdatedEvent } from "../rabbitmq/notificationsApi";
-import { getMostRecentArticlePrice, updateArticlePrice } from "../repositories/prices.repository";
+import { getMostRecentArticlePrice } from "../repositories/prices.repository";
 import { updateArticleState } from "../repositories/articles.repository";
+import updateArticlePrice from "../services/articles/updateArticlePriceService";
 
-export async function getPriceHandler(req: Request, res: Response) {
+/**
+ * Handles the retrieval of the most recent price for a given article.
+ *
+ * Validates user authentication, input structure and article existence. 
+ * Returns the most recent price if available or an error message if not.
+ *
+ * @param {Request} req - The HTTP request object.
+ * @param {Response} res - The HTTP response object.
+ * @returns {Promise<void>} - Responds with the article price or an error message.
+ */
+export async function getPriceHandler(req: Request, res: Response): Promise<void> {
   try {
+    // Validate user authentication
     const token = req.user.token;
+    if (!token) throw new Unauthorized();
 
-    if (!token) {
-      throw new Unauthorized();
-    }
-
+    // Validate input structure using zod
     const { articleId } = GetArticlePriceSchema.parse(req.query);
 
+    // Validate article exists in catalog microservice
     const articleExists = await getArticleExists(articleId, token);
 
     if (!articleExists) {
-      updateArticleState(articleId, 'DELETED');
+      await updateArticleState(articleId, 'DELETED');
       res.status(404).json({ error: "Article not found" });
       return;
     }
@@ -33,16 +44,27 @@ export async function getPriceHandler(req: Request, res: Response) {
   }
 }
 
-export async function updatePriceHandler(req: Request, res: Response) {
+
+/**
+ * Handles the update of an article's price.
+ *
+ * Validates user authentication, input structure and article existence before updating the price.
+ * Emits a Rabbit event upon successful price update and returns the updated price details.
+ *
+ * @param {Request} req - The HTTP request object.
+ * @param {Response} res - The HTTP response object.
+ * @returns {Promise<void>} - Responds with the updated price details or an error message.
+ */
+export async function updatePriceHandler(req: Request, res: Response): Promise<void> {
   try {
+    // Validate user authentication
     const token = req.user.token;
+    if (!token) throw new Unauthorized();
 
-    if (!token) {
-      throw new Unauthorized();
-    }
-
+    // Validate input structure using zod
     const { articleId, price, startDate } = UpdateArticlePriceSchema.parse(req.body);
 
+    // Validate article exists in catalog microservice
     const articleExists = await getArticleExists(articleId, token);
 
     if (!articleExists) {
@@ -52,14 +74,12 @@ export async function updatePriceHandler(req: Request, res: Response) {
     }
 
     await updateArticlePrice({ articleId, price, startDate });
-
     emitPriceUpdatedEvent({ articleId, price, startDate });
 
     res.status(201).json({ articleId, price, startDate });
 
   } catch (error) {
     getErrorResponse(error, res);
-    return;
   }
 }
 

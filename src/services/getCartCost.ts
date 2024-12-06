@@ -1,10 +1,17 @@
 import { Types } from "mongoose";
 import { CalculateCartCostDTO } from "../dtos/api-entities/calculator.dto";
-import { ArticleDiscount, ArticlePrice, Discount, DiscountTypeParameterValue } from "../models/models";
+import { ArticleDiscount, ArticlePrice, Discount } from "../models/models";
 import { BadRequest, NotFound } from "../utils/exceptions";
 import { getBulkOfArticlesByArticleId } from "../repositories/articles.repository";
-import { getDiscountsWithoutArticles } from "../repositories/discounts.repository";
+import { getDiscountsValues, getDiscountsWithoutArticles } from "../repositories/discounts.repository";
 
+/**
+ * Calculates the monetary value of a cart. 
+ * Actually it can apply only one discount per cart.
+ * 
+ * @param cart 
+ * @returns the value of the whole cart, an array its articles and its costs and the discount applied
+ */
 export default async function calculateCartCost(cart: CalculateCartCostDTO) {
   const articleCatalogIds = cart.articles.map(article => article.articleId);
 
@@ -12,6 +19,7 @@ export default async function calculateCartCost(cart: CalculateCartCostDTO) {
     getBulkOfArticlesByArticleId(articleCatalogIds),
     fetchValidDiscounts()
   ]);
+
   const articleDiscounts = await fetchArticleDiscounts(articles, discounts);
 
   // Determine which discounts can be applied
@@ -23,7 +31,7 @@ export default async function calculateCartCost(cart: CalculateCartCostDTO) {
   );
 
   // If the discount contains values, ensure that they were provided
-  const discountValues = await fetchDiscountValues(appliableDiscounts);
+  const discountValues = await getDiscountsValues(appliableDiscounts);
   const validatedDiscounts = validateDiscountParameters(
     cart,
     appliableDiscounts,
@@ -74,7 +82,8 @@ async function fetchArticleDiscounts(articles: any[], discounts: any[]) {
   return ArticleDiscount.find({
     articleId: { $in: articleIds },
     discountId: { $in: discountIds }
-  });
+  })
+    .select("discountId articleId price quantity");
 }
 
 // Filter discounts applicable to the cart
@@ -100,11 +109,6 @@ async function filterApplicableDiscounts(cart: CalculateCartCostDTO, articles: a
   return [...discountsWithArticles, ...(await getDiscountsWithoutArticles())];
 }
 
-// Fetch discount type parameter values for validation
-async function fetchDiscountValues(discounts: any[]) {
-  const discountIds = discounts.map(d => d._id);
-  return DiscountTypeParameterValue.find({ discountId: { $in: discountIds } });
-}
 
 // Validate the provided discount parameters against stored values
 function validateDiscountParameters(cart: CalculateCartCostDTO, discounts: any[], discountValues: any[]) {

@@ -1,23 +1,30 @@
 import { DiscountDTO } from "../../dtos/api-entities/discounts.dto";
-import { findArticleDiscounts, findDiscountTypeParameters, findDiscountTypeParameterValues, findDiscountTypes, findFilteredArticleDiscounts, findValidDiscounts } from "../../repositories/discounts.repository";
+import { getArticleDiscounts, findDiscountTypeParameters, findDiscountTypeParameterValues, findDiscountTypes, findFilteredArticleDiscounts, findValidDiscounts } from "../../repositories/discounts.repository";
 import { getArticleByArticleId } from "../../repositories/articles.repository";
 import { Article, DataType } from "../../models/models";
 
-export interface GetValidDiscountsCriteriaCriteria {
+export interface GetValidDiscountsCriteria {
   articleId?: string
 }
 
+/**
+ * Gets all of the discounts that may be applied to orders
+ * 
+ * @param criteria - restrictions for filtering the discounts
+ * @returns {Promise<DiscountDTO[]>}
+ */
 export async function getValidDiscountsService(
-  criteria: GetValidDiscountsCriteriaCriteria
+  criteria: GetValidDiscountsCriteria
 ): Promise<DiscountDTO[]> {
   const articleDiscountFilter: any = {};
 
   if (criteria.articleId) {
+    // Validate that the artile exists
     const article = await getArticleByArticleId(criteria.articleId);
     articleDiscountFilter.articleId = article._id;
   }
 
-  const articleDiscounts = await findArticleDiscounts(articleDiscountFilter);
+  const articleDiscounts = await getArticleDiscounts(articleDiscountFilter);
   const validDiscountIds = articleDiscounts.map((ad) => ad.discountId);
 
   const discountFilter: any = {};
@@ -45,26 +52,15 @@ export async function getValidDiscountsService(
     : await findFilteredArticleDiscounts(discountIds);
 
   const dtos: DiscountDTO[] = discounts.map((discount) => {
-    const dType = discountTypes.find((type) =>
-      type._id.equals(discount.discountTypeId)
-    );
+    const dType = discountTypes.find((type) => type._id.equals(discount.discountTypeId));
+    if (!dType) throw new Error(`Discount Type of id: ${discount.discountTypeId} is invalid or doesn't exist`);
 
-    if (!dType) {
-      throw new Error(`Discount Type invalid: ${discount.discountTypeId} or not found`);
-    }
-
-    const dParams = discountTypeParameters.filter((param) =>
-      param.discountTypeId.equals(dType._id)
-    );
-    const dValues = discountTypeParameterValues.filter((value) =>
-      value.discountId.equals(discount._id)
-    );
-    const articles = filteredArticleDiscounts.filter((art) =>
-      art.discountId.equals(discount._id)
-    );
+    const dParams = discountTypeParameters.filter((param) => param.discountTypeId.equals(dType._id));
+    const dValues = discountTypeParameterValues.filter((value) => value.discountId.equals(discount._id));
+    const articles = filteredArticleDiscounts.filter((art) => art.discountId.equals(discount._id));
 
     return {
-      id: String(discount.id),
+      id: discount.id.toString(),
       name: discount.name,
       description: discount.description || "",
       articles: articles.map((a) => ({

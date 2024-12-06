@@ -44,3 +44,21 @@ export interface DiscountDTO {
   startDate: Date;
   endDate?: Date;
 }
+
+export interface DiscountResumeDTO {
+  id: string;
+  name: string;
+  description: string;
+  articles: {
+    id: string;
+    price: number;
+    quantity: number;
+  }[],
+  discountTypeId: string;
+  startDate: Date;
+  endDate?: Date;
+  parameterValues: {
+    parameterId: string;
+    value: string | number;
+  }[];
+}

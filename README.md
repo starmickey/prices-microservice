@@ -21,7 +21,7 @@ El microservicio de precios, como su nombre lo indica, permite gestionar los pre
 
 **Camino normal:**
 1. Validar que se incluyó en el cuerpo de la solicitud un `price` numérico mayor a cero.
-2. Validar que se incluyó en el cuerpo de la solicitud un `articleId` numérico mayor o igual a cero.
+2. Validar que se incluyó en el cuerpo de la solicitud una cadena `articleId` de longitud mayor a cero.
 3. Si se ingresó `startDate` 
     - Validar que fecha_actual <= `startDate` 
 4. Validar la existencia del artículo consultando el microservicio catálogo.
@@ -29,7 +29,7 @@ El microservicio de precios, como su nombre lo indica, permite gestionar los pre
     - `price` igual al incluido en el body.
     - `startDate` igual a la ingresada o en su defecto la actual.
 5. Actualizar `Article` con `state` = `TAXED` (sin importar cuál haya sido su estado anterior).
-6. Emitir evento `price_updated`
+6. Emitir evento `price_updated` a Rabbit.
 
 **Caminos alternativos:**
 * Si el usuario no se encuentra logueado
@@ -68,7 +68,7 @@ Authorization: Bearer token
 
 `403 FORBIDDEN` si el usuario no se encuentra logueado
 
-`404 NOT FOUND` si no se encontró el artículo o fue eliminado
+`500 SERVER ERROR` si el microservicio catálogo no encontró el artículo
 
 **Interfaz asincrónica (Rabbit)**
 
@@ -91,7 +91,7 @@ Authorization: Bearer token
 * Usuario logueado
 
 **Camino normal:**
-1. Validar que `articleId` es un número mayor o igual a cero
+1. Validar que se incluyó en el cuerpo de la solicitud una cadena `articleId` de longitud mayor a cero.
 2. Validar existencia del árticulo mediante comunicación con el microservicio catálogo.
 2. Buscar `Article` en base de datos local con `articleId` igual al ingresado.
 3. Verificar que el `state` del artículo es `TAXED`
@@ -203,6 +203,32 @@ Authorization: Bearer token
 
 `201 CREATED` si éxito  
 
+```json
+{
+  "message": "Discount created",
+  "discount": {
+    "id": "123456",
+    "name": "Navidad con cupón",
+    "description": "Descuento por 2 pan dulces, una coca y un fernet.",
+    "articles": [
+      {
+        "id": "123456",
+        "quantity": "123456",
+      }
+    ],
+    "discountTypeId": "123456",
+    "startDate": "2024-11-02 16:00:00.000",
+    "endDate": "2024-11-02 16:00:00.000",
+    "parameterValues": [
+      {
+        "parameterId": "123456",
+        "value": "123456",
+      }
+    ],
+  }
+}
+```
+
 `400 BAD REQUEST` 
   - si no se incluyó `id` o `price` para algún artículo.
   - si no se incluyó algún parámetro obligarorio o se envió un valor de tipo inválido
@@ -287,6 +313,32 @@ Authorization: Bearer token
 *Response*
 
 `201 CREATED` si éxito  
+
+```json
+{
+  "message": "Discount updated",
+  "discount": {
+    "id": "123456",
+    "name": "Navidad con cupón",
+    "description": "Descuento por 2 pan dulces, una coca y un fernet.",
+    "articles": [
+      {
+        "id": "123456",
+        "quantity": "123456",
+      }
+    ],
+    "discountTypeId": "123456",
+    "startDate": "2024-11-02 16:00:00.000",
+    "endDate": "2024-11-02 16:00:00.000",
+    "parameterValues": [
+      {
+        "parameterId": "123456",
+        "value": "123456",
+      }
+    ],
+  }
+}
+```
 
 `400 BAD REQUEST` 
   - si no se incluyó un `id` 
@@ -393,6 +445,7 @@ Authorization: Bearer token
               "id": "123456",
               "name": "Código de cupón",
               "dataTypeName": "STRING",
+              "value": "CODIGO_EJEMPLO",
             }
           ]
       },

@@ -1,25 +1,38 @@
 import { Types } from "mongoose";
-import { CreateDiscountDTO, UpdateDiscountDTO, ParameterValueDTO, DiscountDTO } from "../dtos/api-entities/discounts.dto";
+import { CreateDiscountDTO, UpdateDiscountDTO, ParameterValueDTO, DiscountResumeDTO } from "../dtos/api-entities/discounts.dto";
 import { Article, ArticleDiscount, DataType, Discount, DiscountType, DiscountTypeParameter, DiscountTypeParameterValue } from "../models/models";
 import { validateType } from "../utils/dataTypeValidator";
 import { BadRequest, NotFound } from "../utils/exceptions";
 
+/*
+ *  ================================================================
+ *  
+ *                   D I S C O U N T S     A B M
+ *  
+ *  ================================================================
+ */
 
-export async function createDiscount(params: CreateDiscountDTO) {
-  await validateDiscountParameters(params);
-
+/**
+ * Creates a new discount and associates it with articles and discount parameters.
+ * 
+ * @param {CreateDiscountDTO} params - The data needed to create a new discount, including articles and parameters.
+ * @returns {Promise<DiscountResumeDTO>} - Discount details
+ * @throws {BadRequest} - If any article IDs do not exist or if there are validation issues with parameters.
+ */
+export async function createDiscount(params: CreateDiscountDTO): Promise<DiscountResumeDTO> {
   // Validate that all of the articles exist in the database
   const articleIds = params.articles?.map(a => a.id) || [];
-  const articles = await Article.find({ articleId: { $in: articleIds } });
+  const articles = await Article.find({ articleId: { $in: articleIds } }).select("id articleId");
 
   if (articleIds.length !== articles.length) {
     const foundArticleIds = articles.map((article) => article.articleId);
     const missingArticleIds = articleIds.filter((id) => !foundArticleIds.includes(id));
 
-    throw new BadRequest(
-      `The following articleIds do not exist: ${missingArticleIds.join(", ")}`
-    )
+    throw new BadRequest(`The following articleIds do not exist: ${missingArticleIds.join(", ")}`);
   }
+
+  // Validate that required parameters where provided and they are valid
+  await validateDiscountParameters(params);
 
   // Create entities
   const discount = new Discount({
@@ -55,32 +68,67 @@ export async function createDiscount(params: CreateDiscountDTO) {
   }) || [];
 
   // Run both sets of promises concurrently
-  await Promise.all([
-    ...articleDiscountPromises, // Wait for all ArticleDiscount saves
-    ...paramValuesPromises // Wait for all DiscountTypeParameterValue saves
+  const [articleDiscounts, discountValues] = await Promise.all([
+    Promise.all(articleDiscountPromises), // Wait for all ArticleDiscount saves
+    Promise.all(paramValuesPromises) // Wait for all DiscountTypeParameterValue saves
   ]);
 
-  return discount._id;
+  const dto: DiscountResumeDTO = {
+    id: discount._id.toString(),
+    name: discount.name,
+    description: discount.description || "",
+    articles: articleDiscounts.map(ad => ({
+      id: ad._id.toString(),
+      price: ad.price,
+      quantity: ad.quantity,
+    })),
+    discountTypeId: discount.discountTypeId.toString(),
+    startDate: discount.startDate,
+    endDate: discount.endDate,
+    parameterValues: discountValues.map(parameterValue => ({
+      parameterId: parameterValue.discountTypeParameterId.toString(),
+      value: parameterValue.value
+    }))
+  };
+
+  return dto;
 }
 
-export async function updateDiscount(params: UpdateDiscountDTO) {
+
+/**
+ * Updates a discount by disabling it (endDate = now) and creates a new one.
+ * 
+ * @param {UpdateDiscountDTO} params - The data needed to create a new discount, including articles and parameters.
+ * @returns {Promise<DiscountResumeDTO>} - Discount details
+ * @throws {NotFound}" - If any article IDs do not exist or if there are validation issues with parameters.
+ */
+export async function updateDiscount(params: UpdateDiscountDTO): Promise<DiscountResumeDTO> {
   const discount = await Discount.findById(params.id);
+  if (!discount) throw new NotFound(`Discount not found`);
 
-  if (!discount) {
-    throw new NotFound(`Discount not found`);
-  }
-
+  console.log("DISCOUNT", discount);
+  
   const currentDate = new Date();
 
   if (!discount.endDate || discount.endDate > currentDate) {
     discount.endDate = currentDate;
-    await discount.save();
+    const res = await discount.save();
+    console.log("NEW DISCOUNT", res);
   }
+
 
   return await createDiscount(params);
 }
 
-export async function deleteDiscount(discountId: string) {
+
+/**
+ * Disables a discount: setsEndDate to now
+ * 
+ * @param {string} discountId - The discount id
+ * @throws {NotFound} - If the discount doesn't exist
+ * @throws {BadRequest} - If it was already disabled
+ */
+export async function deleteDiscount(discountId: string): Promise<void> {
   const discount = await Discount.findById(discountId);
 
   if (!discount) {
@@ -98,104 +146,18 @@ export async function deleteDiscount(discountId: string) {
   throw new BadRequest(`Discount already disabled or expired`);
 }
 
-export interface GetValidDiscountsCriteria {
-  articleId?: string;
-}
-
-export async function getValidDiscounts(criteria?: GetValidDiscountsCriteria) {
-  const currentDate = new Date();
-
-  // Get valid discount ids when article is present
-  const articleDiscountFilter: any = {};
-
-  if (criteria?.articleId) {
-    const article = await Article.findOne({ articleId: criteria.articleId });
-
-    if(!article) {
-      throw new NotFound("No discounts were found for this article");
-    }
-
-    articleDiscountFilter.articleId = article._id;
-  }
-
-  const articleDiscounts = await ArticleDiscount.find(articleDiscountFilter).select("discountId articleId").populate("articleId");
-  const validDiscountIds = articleDiscounts.map(ad => ad.discountId);
-
-  // Create filter discount
-  const discountFilter: any = {
-    startDate: { $lte: currentDate },
-    $or: [
-      { endDate: { $gt: currentDate } }, // Expired discounts
-      { endDate: null }, // Discounts with no end date
-    ],
-  };
-
-  if (criteria?.articleId) {
-    discountFilter._id = { $in: validDiscountIds };
-  }
-
-  // Get all of the discounts params
-  const discounts = await Discount.find(discountFilter).select("name description startDate endDate discountTypeId");
-
-  const discountIds = discounts.map(d => d._id);
-  const discountTypeIds = discounts.map(d => d.discountTypeId);
-
-  const [
-    discountTypes,
-    discountTypeParameters,
-    discountTypeParameterValues,
-  ] = await Promise.all([
-    DiscountType.find({ _id: { $in: discountTypeIds } }).select("name description"),
-    DiscountTypeParameter.find({ discountTypeId: { $in: discountTypeIds } }).populate("type"),
-    DiscountTypeParameterValue.find({ discountId: { $in: discountIds } })
-  ]);
-
-  // Get articleDiscounts even when articleId is not in criteria
-  const filteredArticleDiscounts = criteria?.articleId
-    ? articleDiscounts.filter(ad => validDiscountIds.includes(ad.discountId))
-    : await ArticleDiscount.find({ discountId: { $in: discountIds } }).populate("articleId");
-
-  // Map to DTOs
-  const dtos: DiscountDTO[] = discounts.map(discount => {
-    const dType = discountTypes.find(type => type._id.equals(discount.discountTypeId));
-
-    if (!dType) {
-      throw new Error(`Discount Type invalid: ${discount.discountTypeId} or not found`);
-    }
-
-    const dParams = discountTypeParameters.filter(param => param.discountTypeId.equals(dType._id));
-    const dValues = discountTypeParameterValues.filter(value => value.discountId.equals(discount._id));
-    const articles = filteredArticleDiscounts.filter(art => art.discountId.equals(discount._id));
-
-    return {
-      id: String(discount.id),
-      name: discount.name,
-      description: discount.description || "",
-      articles: articles.map(a => ({
-        id: String(a.articleId instanceof Article ? a.articleId.articleId : ""),
-        price: a.price,
-        quantity: a.quantity,
-      })),
-      discountType: {
-        id: String(dType.id),
-        name: dType.name,
-        description: dType.description || "",
-        parameters: dParams.map(param => ({
-          id: String(param.id),
-          name: param.name,
-          dataTypeName: param.type instanceof DataType ? param.type.name : "",
-          value: dValues.find(value => value.discountTypeParameterId.equals(param._id))?.value || "",
-        })),
-      },
-      startDate: discount.startDate,
-      endDate: discount.endDate,
-    };
-  });
-
-  return dtos;
-}
-
-
+/**
+ * Utility function created to validate a discount.
+ * This means that all the parameters required by the specified discountType are provided,
+ * and for each of them is also provided a value that has the right DataType
+ * 
+ * @param {string} discountTypeId - id of the DiscountType. For example, a combo or a coupon
+ * @param {ParameterValueDTO[]} [parameterValues] - the values that were provided to the discount. For example,
+ * if discountType = coupon, a coupon code must be provided
+ * @throws {Error} - if some validation is not passed
+ * @throws {NotFound} - if no DiscountType was found whose id is the provided one
+ * @return {void}
+ */
 interface ValidateDiscountParametersProps {
   discountTypeId: string;
   parameterValues?: ParameterValueDTO[]
@@ -218,9 +180,7 @@ export async function validateDiscountParameters({
 
   // Check that the correct number of parameters was provided
   if (discountTypeParameters.length !== parameterValues.length) {
-    throw new BadRequest(
-      `Invalid discount parameters for DiscountType ${discountType.name}. RequiredTypes: ${discountTypeParameters.map(d => d.name)}`
-    );
+    throw new BadRequest(`Invalid discount parameters for DiscountType ${discountType.name}. RequiredTypes: ${discountTypeParameters.map(d => d.name)}`);
   }
 
   // Validate that parameters ids and values
@@ -228,15 +188,11 @@ export async function validateDiscountParameters({
     const providedParameter = parameterValues.find(p => p.id === discountTypeParameter.id);
 
     if (!providedParameter) {
-      throw new BadRequest(
-        `Invalid discount parameters. ${discountTypeParameter.name} is missing.`
-      );
+      throw new BadRequest(`Invalid discount parameters. ${discountTypeParameter.name} is missing.`);
     }
 
     if (!discountTypeParameter.type || !(discountTypeParameter.type instanceof DataType)) {
-      throw new Error(
-        `Discount parameter ${discountTypeParameter.name} has an invalid type`
-      );
+      throw new Error(`Discount parameter ${discountTypeParameter.name} has an invalid type`);
     }
 
     const providedValue = providedParameter.value;
@@ -246,7 +202,42 @@ export async function validateDiscountParameters({
   });
 }
 
-export async function getDiscountsWithoutArticles() {
+/*
+ *  ================================================================
+ *  
+ *              D I S C O U N T S     P R O V I D E R S
+ *  
+ *  ================================================================
+ */
+
+/**
+ * Gets all of the discounts whose startDate has passed and endDate
+ * hasn't passed or is null
+ * 
+ * @param filter - Used to expand the restrictions on the Discount.find query
+ * @returns {Promise<Discount[]>}
+ */
+export async function findValidDiscounts(filter: any): Promise<any[]> {
+  const currentDate = new Date();
+
+  const discountFilter: any = {
+    startDate: { $lte: currentDate },
+    $or: [
+      { endDate: { $gt: currentDate } },
+      { endDate: null },
+    ],
+    ...filter
+  };
+
+  return Discount.find(discountFilter).select("name description startDate endDate discountTypeId");
+}
+
+/**
+ * Gets all of the valid discounts that are not related to any article
+ * 
+ * @return {Promise<Discount[]>}
+*/
+export async function getDiscountsWithoutArticles(): Promise<any[]> {
   const currentDate = new Date(); // Get the current date and time
 
   const discountsWithoutArticles = await Discount.aggregate([
@@ -282,33 +273,20 @@ export async function getDiscountsWithoutArticles() {
   return discountsWithoutArticles;
 }
 
-export async function findArticleDiscounts(filter: any) {
-  return ArticleDiscount.find(filter).select("discountId articleId").populate("articleId");
-}
 
-export async function findValidDiscounts(filter: any) {
-  const currentDate = new Date();
-
-  const discountFilter: any = {
-    startDate: { $lte: currentDate },
-    $or: [
-      { endDate: { $gt: currentDate } },
-      { endDate: null },
-    ],
-    ...filter
-  };
-
-  return Discount.find(discountFilter).select("name description startDate endDate discountTypeId");
+/*
+ *  ================================================================
+ *  
+ *              I N T E R M I D I A T E    C L A S E S
+ *  
+ *  ================================================================
+ */
+export async function getArticleDiscounts(filter: any) {
+  return ArticleDiscount.find(filter).select("discountId articleId price quantity").populate("articleId");
 }
 
 export async function findDiscountTypes(discountTypeIds: Types.ObjectId[]) {
-  const discountType = DiscountType.find({ id: { $in: discountTypeIds } }).select("name description");
-
-  if(!discountType) {
-    throw "DiscountType not found";
-  }
-
-  return discountType;
+  return DiscountType.find({ _id: { $in: discountTypeIds } }).select("name description");
 }
 
 export async function findDiscountTypeParameters(discountTypeIds: Types.ObjectId[]) {
@@ -321,4 +299,9 @@ export async function findDiscountTypeParameterValues(discountIds: Types.ObjectI
 
 export async function findFilteredArticleDiscounts(discountIds: Types.ObjectId[]) {
   return ArticleDiscount.find({ discountId: { $in: discountIds } }).populate("articleId");
+}
+
+export async function getDiscountsValues(discounts: any[]) {
+  const discountIds = discounts.map(d => d._id);
+  return DiscountTypeParameterValue.find({ discountId: { $in: discountIds } });
 }

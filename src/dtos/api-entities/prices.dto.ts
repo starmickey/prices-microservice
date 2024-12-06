@@ -1,4 +1,4 @@
-export interface UpdatePriceDTO {
+export interface PriceDTO {
   articleId: string;
   price: number;
   startDate: Date;

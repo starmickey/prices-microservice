@@ -1,0 +1,18 @@
+db['discounttypes'].insertOne({
+  name: "COMBO",
+  description: "",
+  endDate: null
+});
+
+const discountType2 = db['discounttypes'].insertOne({
+  name: "CUPON",
+  description: "",
+  endDate: null
+});
+
+db['discounttypeparameters'].insertOne({
+  name: "NUMERO_CUPON",
+  discountTypeId: "674fbbd6092b6c7e9ea0c658",
+  type: "674fb463e30d554797bf4ccb",
+  deleteDate: null
+});

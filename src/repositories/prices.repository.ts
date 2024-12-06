@@ -1,15 +1,23 @@
-import { UpdatePriceDTO } from '../dtos/api-entities/prices.dto';
+import { Types } from 'mongoose';
+import { PriceDTO } from '../dtos/api-entities/prices.dto';
 import { Article, ArticlePrice, ArticleState } from "../models/models";
-import { createArticleWithState, updateArticleState } from "./articles.repository";
+import { createArticleWithState } from "./articles.repository";
 
+/**
+ * Retrieves the most recent price for a given article.
+ *
+ * @param {string} articleId - The unique identifier of the article used by the catalog microservice.
+ * @returns {Promise<number>} - The most recent price of the article.
+ *
+ * @throws {TypeError} If the `articleId` is empty or invalid.
+ * @throws {Error} If the article or price information is missing or unavailable.
+ */
 export async function getMostRecentArticlePrice(articleId: string): Promise<number> {
-  if (!articleId.trim()) {
-    throw TypeError("Missing articleId parameter");
+  if (!articleId || !articleId.trim()) {
+    throw new TypeError("Missing or invalid articleId parameter");
   }
 
-  let article;
-
-  article = await Article.findOne({ articleId }).populate("stateId");
+  let article = await Article.findOne({ articleId }).populate("stateId");
 
   if (!article) {
     article = await createArticleWithState(articleId, 'UNTAXED');
@@ -22,12 +30,12 @@ export async function getMostRecentArticlePrice(articleId: string): Promise<numb
   }
 
   const today = new Date();
-  const recentPrice = await ArticlePrice.findOne({ 
-    articleId: article._id, 
-    startDate: { $lte: today } // Filter for startDate <= today
+  const recentPrice = await ArticlePrice.findOne({
+    articleId: article._id,
+    startDate: { $lte: today },
   })
-  .sort({ startDate: -1 }) // Sort by startDate descending to get the most recent price
-  .limit(1); // Ensure only one price is returned
+    .sort({ startDate: -1 })
+    .limit(1);
 
   if (!recentPrice) {
     throw new Error("No price information available for the article");
@@ -36,24 +44,31 @@ export async function getMostRecentArticlePrice(articleId: string): Promise<numb
   return recentPrice.price;
 }
 
-export async function updateArticlePrice({ articleId, price, startDate }: UpdatePriceDTO): Promise<UpdatePriceDTO> {
 
-  let article = await Article.findOne({ articleId });
-
-  if (!article) {
-    // Article doesn't exist, create a new one
-    article = await createArticleWithState(articleId, 'TAXED');
-  } else {
-    article = await updateArticleState(articleId, 'TAXED');
-  }
-
+/**
+ * Creates a new price entry for a given article.
+ *
+ * @param {Types.ObjectId} articleId - The unique MongoDB identifier of the article.
+ * @param {number} price - The price to be set for the article.
+ * @param {Date} [startDate] - The optional start date for the price; defaults to the current date.
+ * @returns {Promise<PriceDTO>} - The created price object including the article ID, price, and start date.
+ */
+export async function createArticlePrice(
+  articleId: Types.ObjectId,
+  price: number,
+  startDate?: Date
+): Promise<PriceDTO> {
   const articlePrice = new ArticlePrice({
     price,
-    articleId: article._id,
-    startDate,
+    articleId,
+    startDate: startDate || new Date(),
   });
 
-  await articlePrice.save();
+  const newArticlePrice = await articlePrice.save();
 
-  return { articleId, price, startDate };
+  return {
+    articleId: newArticlePrice.articleId.toString(),
+    price: newArticlePrice.price,
+    startDate: newArticlePrice.startDate,
+  };
 }
