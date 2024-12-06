@@ -12,7 +12,7 @@ import { getDiscountsValues, getDiscountsWithoutArticles } from "../repositories
  * @param cart 
  * @returns the value of the whole cart, an array its articles and its costs and the discount applied
  */
-export default async function calculateCartCost(cart: CalculateCartCostDTO) {
+export default async function getCartCost(cart: CalculateCartCostDTO) {
   const articleCatalogIds = cart.articles.map(article => article.articleId);
 
   const [articles, discounts] = await Promise.all([
@@ -41,8 +41,13 @@ export default async function calculateCartCost(cart: CalculateCartCostDTO) {
   // Get articles' prices without discounts
   const articlePrices = await calculateArticlePrices(articles);
 
-  // Get the best discount
-  const bestDiscount = calculateBestDiscount(
+  const cartWithoutDiscounts = getCartCostWithoutDiscounts(cart, articles, articlePrices);
+
+  if (validatedDiscounts.length === 0) {
+    return cartWithoutDiscounts;
+  }
+
+  const bestDiscountDTO = calculateBestDiscountCartCost(
     cart,
     articles,
     articlePrices,
@@ -50,15 +55,11 @@ export default async function calculateCartCost(cart: CalculateCartCostDTO) {
     validatedDiscounts
   );
 
-  return {
-    totalAmount: bestDiscount.totalAmount,
-    articles: bestDiscount.articles,
-    discount: {
-      id: bestDiscount.discount._id,
-      name: bestDiscount.discount.name,
-      description: bestDiscount.discount.description || "",
-    },
-  };
+  let dto = bestDiscountDTO.totalAmount < cartWithoutDiscounts.totalAmount
+    ? bestDiscountDTO
+    : cartWithoutDiscounts
+
+  return dto;
 }
 
 // Fetch discounts valid for the current date
@@ -88,25 +89,23 @@ async function fetchArticleDiscounts(articles: any[], discounts: any[]) {
 
 // Filter discounts applicable to the cart
 async function filterApplicableDiscounts(cart: CalculateCartCostDTO, articles: any[], articleDiscounts: any[], discounts: any[]) {
-  const possibleDiscountIds = discounts.map(d => d.id.toString());
+  // const possibleDiscountIds = discounts.map(d => d.id.toString());
 
-  const filteredDiscounts = possibleDiscountIds.filter(discountId => {
-    const relatedDiscounts = articleDiscounts.filter(ad => ad.discountId.toString() === discountId);
+  const filteredDiscounts = discounts.filter(discount => {
+    const filteredArticleDiscounts = articleDiscounts.filter(ad => ad.discountId.toString() === discount.id.toString());
 
-    if (!relatedDiscounts.length) return true;
+    if (!filteredArticleDiscounts.length) return discount.baseDiscountedAmount > 0;
 
-    return relatedDiscounts.every(ad => {
+    return filteredArticleDiscounts.every(ad => {
       const article = articles.find(a => a._id.equals(ad.articleId));
-      if (!article) {
-        throw new Error("Article not found while filtering discounts.");
-      }
+      if (!article) throw new Error("Article not found while filtering discounts.")
+
       const cartArticle = cart.articles.find(ca => ca.articleId === article.articleId);
       return cartArticle && cartArticle.quantity >= ad.quantity;
     });
   });
 
-  const discountsWithArticles = discounts.filter(d => filteredDiscounts.includes(d._id.toString()));
-  return [...discountsWithArticles, ...(await getDiscountsWithoutArticles())];
+  return filteredDiscounts;
 }
 
 
@@ -142,7 +141,7 @@ async function calculateArticlePrices(articles: any[]) {
 }
 
 // Determine the best discount for the cart
-function calculateBestDiscount(cart: CalculateCartCostDTO, articles: any[], articlePrices: any[], articleDiscounts: any[], discounts: any[]) {
+function calculateBestDiscountCartCost(cart: CalculateCartCostDTO, articles: any[], articlePrices: any[], articleDiscounts: any[], discounts: any[]) {
   const calculateDiscountCost = (discount: any) => {
     const discountArticles = articleDiscounts.filter(ad => ad.discountId.equals(discount._id));
 
@@ -157,11 +156,15 @@ function calculateBestDiscount(cart: CalculateCartCostDTO, articles: any[], arti
       const articleDiscount = discountArticles.find(ad => ad.articleId.equals(article._id));
 
       let amount = 0;
+      let discountAmount = 0;
 
       if (articleDiscount) {
-        const discountedQuantity = Math.floor(cartArticle.quantity / articleDiscount.quantity);
+        const discountedQuantity = Math.floor(cartArticle.quantity / articleDiscount.quantity) * articleDiscount.quantity;
         const remainingQuantity = cartArticle.quantity % articleDiscount.quantity;
-        amount = discountedQuantity * articleDiscount.price + remainingQuantity * price;
+        const baseDiscount = discount.baseDiscountedAmount;
+
+        amount = Math.max(discountedQuantity * articleDiscount.price + remainingQuantity * price - baseDiscount, 0);
+        discountAmount = cartArticle.quantity * price - amount;
       } else {
         amount = cartArticle.quantity * price;
       }
@@ -169,6 +172,7 @@ function calculateBestDiscount(cart: CalculateCartCostDTO, articles: any[], arti
       return {
         id: cartArticle.articleId,
         quantity: cartArticle.quantity,
+        discountAmount,
         amount,
       }
     });
@@ -183,7 +187,37 @@ function calculateBestDiscount(cart: CalculateCartCostDTO, articles: any[], arti
 
   return {
     totalAmount: bestDiscount.totalAmount,
-    discount: bestDiscount.discount,
-    articles: bestDiscount.articlesTotals
+    articles: bestDiscount.articlesTotals,
+    discount: {
+      id: bestDiscount.discount._id,
+      name: bestDiscount.discount.name,
+      description: bestDiscount.discount.description || "",
+    },
   };
+}
+
+function getCartCostWithoutDiscounts(cart: CalculateCartCostDTO, articles: any[], articlePrices: any[]) {
+  const articlesDTOs = cart.articles.map(cartArticle => {
+    const article = articles.find(a => a.articleId === cartArticle.articleId);
+    if (!article) throw Error(`Article not found for cartArticle of id: ${cartArticle.articleId}`);
+
+    const articlePrice = articlePrices.find(ap => ap.articleId.toString() === article._id.toString());
+    if (!articlePrice) throw Error(`Article of id: ${cartArticle.articleId} has no default price`);
+
+    const price = articlePrice.price;
+    const quantity = cartArticle.quantity;
+
+    return {
+      id: cartArticle.articleId,
+      quantity: cartArticle.quantity,
+      amount: price * quantity
+    };
+  });
+
+  const totalAmount = articlesDTOs.reduce((total, art) => total + art.amount, 0);
+
+  return {
+    totalAmount,
+    articles: articlesDTOs
+  }
 }

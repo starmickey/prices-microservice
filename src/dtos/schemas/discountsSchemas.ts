@@ -1,9 +1,7 @@
 import { z } from "zod";
 import { ArticleSchema } from "./articles.schemas";
 
-const currentDate = new Date();
-
-export const DiscountSchema = z.object({
+const DiscountSchema = z.object({
   name: z
     .string({ required_error: "Name is missing", invalid_type_error: "Name must be a string" })
     .min(1, { message: "Name must have at least one character" }),
@@ -28,22 +26,14 @@ export const DiscountSchema = z.object({
   discountTypeId: z
     .string({ required_error: "DiscountTypeId is missing", invalid_type_error: "DiscountTypeId must be a string" })
     .min(1, { message: "DiscountTypeId must have at least one character" }),
-  startDate: z
-    .preprocess((val) => (val ? new Date(val as string) : undefined), z.date().optional())
-    .refine(
-      // If it is defined, it should be greater than today
-      (date) => !date || date >= currentDate,
-      { message: "startDate must be a future date" }
-    )
+  baseDiscountedAmount: z
+    .number({ invalid_type_error: "BaseDiscountedAmount must be a number" })
     .optional()
-    .default(() => currentDate),
-  endDate: z
-    .preprocess((val) => (val ? new Date(val as string) : undefined), z.date().optional())
     .refine(
-      // If it is defined, it should be greater than today
-      (date) => !date || date >= currentDate,
-      { message: "endDate must be a future date" }
-    ),
+      amount => !amount || amount > 0,
+      { message: "BaseDiscountedAmount must be greater than zero" }
+    )
+    .default(0),
   parameterValues: z.array(
     z.object({
       id: z
@@ -62,23 +52,69 @@ export const DiscountSchema = z.object({
     .optional()
 })
 
-export const CreateDiscountSchema = DiscountSchema
-  .extend({})
-  .refine(
-    (data) => !data.endDate || !data.startDate || data.endDate > data.startDate,
-    { message: "endDate must be after startDate", path: ["endDate"] }
-  );
+export function parseCreateDiscountSchema(params: any) {
+  const currentDate = new Date();
 
-export const UpdateDiscountSchema = DiscountSchema
-  .extend({
-    id: z
-      .string({ required_error: "Discount id is missing", invalid_type_error: "Discount id invalid. It must be a string" })
-      .min(1, { message: "Discount id must have at least one character" })
-  })
-  .refine(
-    (data) => !data.endDate || !data.startDate || data.endDate > data.startDate,
-    { message: "endDate must be after startDate", path: ["endDate"] }
-  );
+  const CreateDiscountSchema = DiscountSchema
+    .extend({
+      startDate: z
+        .preprocess((val) => (val ? new Date(val as string) : undefined), z.date().optional())
+        .refine(
+          // If it is defined, it should be greater than today
+          (date) => !date || date >= currentDate,
+          { message: "startDate must be a future date" }
+        )
+        .optional()
+        .default(() => currentDate),
+      endDate: z
+        .preprocess((val) => (val ? new Date(val as string) : undefined), z.date().optional())
+        .refine(
+          // If it is defined, it should be greater than today
+          (date) => !date || date >= currentDate,
+          { message: "endDate must be a future date" }
+        ),
+    })
+    .refine(
+      (data) => !data.endDate || !data.startDate || data.endDate > data.startDate,
+      { message: "endDate must be after startDate", path: ["endDate"] }
+    );
+
+  return CreateDiscountSchema.parse(params);
+}
+
+
+export function parseUpdateDiscountSchema(params: any) {
+  const currentDate = new Date();
+
+  const UpdateDiscountSchema = DiscountSchema
+    .extend({
+      id: z
+        .string({ required_error: "Discount id is missing", invalid_type_error: "Discount id invalid. It must be a string" })
+        .min(1, { message: "Discount id must have at least one character" }),
+      startDate: z
+        .preprocess((val) => (val ? new Date(val as string) : undefined), z.date().optional())
+        .refine(
+          // If it is defined, it should be greater than today
+          (date) => !date || date >= currentDate,
+          { message: "startDate must be a future date" }
+        )
+        .optional()
+        .default(() => currentDate),
+      endDate: z
+        .preprocess((val) => (val ? new Date(val as string) : undefined), z.date().optional())
+        .refine(
+          // If it is defined, it should be greater than today
+          (date) => !date || date >= currentDate,
+          { message: "endDate must be a future date" }
+        ),
+    })
+    .refine(
+      (data) => !data.endDate || !data.startDate || data.endDate > data.startDate,
+      { message: "endDate must be after startDate", path: ["endDate"] }
+    );
+
+  return UpdateDiscountSchema.parse(params);
+}
 
 export const DeleteDiscountSchema = z.object({
   id: z

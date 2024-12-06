@@ -68,6 +68,7 @@ export async function getValidDiscountsService(
         price: a.price,
         quantity: a.quantity,
       })),
+      baseDiscountedAmount: discount.baseDiscountedAmount,
       discountType: {
         id: String(dType.id),
         name: dType.name,

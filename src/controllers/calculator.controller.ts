@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import getErrorResponse from "../utils/getErrorResponse";
 import { CalculateCartCostSchema } from "../dtos/schemas/calculate.schemas";
-import calculateCartCost from "../services/getCartCost";
+import getCartCostService from "../services/getCartCost";
 import { Types } from "mongoose";
 import { BadRequest } from "../utils/exceptions";
 
@@ -26,7 +26,7 @@ export async function getCartCost(req: Request, res: Response) {
       });
     }
 
-    const response = await calculateCartCost(params);
+    const response = await getCartCostService(params);
 
     res.status(200).json({ response });
   } catch (error) {

@@ -11,6 +11,7 @@ export interface CreateDiscountDTO {
     price: number;
     quantity: number;
   }[],
+  baseDiscountedAmount?: number;
   discountTypeId: string;
   startDate: Date;
   endDate?: Date;
@@ -30,6 +31,7 @@ export interface DiscountDTO {
     price: number;
     quantity: number;
   }[],
+  baseDiscountedAmount: number;
   discountType: {
     id: string;
     name: string;
@@ -54,6 +56,7 @@ export interface DiscountResumeDTO {
     price: number;
     quantity: number;
   }[],
+  baseDiscountedAmount: number;
   discountTypeId: string;
   startDate: Date;
   endDate?: Date;

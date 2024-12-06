@@ -1,6 +1,6 @@
 import { Types } from "mongoose";
 import { CreateDiscountDTO, UpdateDiscountDTO, ParameterValueDTO, DiscountResumeDTO } from "../dtos/api-entities/discounts.dto";
-import { Article, ArticleDiscount, DataType, Discount, DiscountType, DiscountTypeParameter, DiscountTypeParameterValue } from "../models/models";
+import { Article, ArticleDiscount, ArticlePrice, ArticleState, DataType, Discount, DiscountType, DiscountTypeParameter, DiscountTypeParameterValue } from "../models/models";
 import { validateType } from "../utils/dataTypeValidator";
 import { BadRequest, NotFound } from "../utils/exceptions";
 
@@ -22,7 +22,7 @@ import { BadRequest, NotFound } from "../utils/exceptions";
 export async function createDiscount(params: CreateDiscountDTO): Promise<DiscountResumeDTO> {
   // Validate that all of the articles exist in the database
   const articleIds = params.articles?.map(a => a.id) || [];
-  const articles = await Article.find({ articleId: { $in: articleIds } }).select("id articleId");
+  const articles = await Article.find({ articleId: { $in: articleIds } }).select("id articleId").populate("stateId");
 
   if (articleIds.length !== articles.length) {
     const foundArticleIds = articles.map((article) => article.articleId);
@@ -30,6 +30,12 @@ export async function createDiscount(params: CreateDiscountDTO): Promise<Discoun
 
     throw new BadRequest(`The following articleIds do not exist: ${missingArticleIds.join(", ")}`);
   }
+
+  // Validate that all articles have been taxed
+  articles.forEach(article => {
+    if (!(article.stateId instanceof ArticleState)) throw new Error(`Couldn't populate the state of the article whose id is: ${article.articleId}`);
+    if (article.stateId.name !== "TAXED") throw new BadRequest(`Article of id ${article.articleId} has state ${article.stateId.name}`)
+  });
 
   // Validate that required parameters where provided and they are valid
   await validateDiscountParameters(params);
@@ -41,6 +47,7 @@ export async function createDiscount(params: CreateDiscountDTO): Promise<Discoun
     startDate: params.startDate || new Date(),
     endDate: params.endDate || null,
     discountTypeId: params.discountTypeId,
+    baseDiscountedAmount: params.baseDiscountedAmount
   });
 
   await discount.save();
@@ -82,6 +89,7 @@ export async function createDiscount(params: CreateDiscountDTO): Promise<Discoun
       price: ad.price,
       quantity: ad.quantity,
     })),
+    baseDiscountedAmount: discount.baseDiscountedAmount,
     discountTypeId: discount.discountTypeId.toString(),
     startDate: discount.startDate,
     endDate: discount.endDate,
@@ -106,16 +114,12 @@ export async function updateDiscount(params: UpdateDiscountDTO): Promise<Discoun
   const discount = await Discount.findById(params.id);
   if (!discount) throw new NotFound(`Discount not found`);
 
-  console.log("DISCOUNT", discount);
-  
   const currentDate = new Date();
 
   if (!discount.endDate || discount.endDate > currentDate) {
     discount.endDate = currentDate;
     const res = await discount.save();
-    console.log("NEW DISCOUNT", res);
   }
-
 
   return await createDiscount(params);
 }
@@ -229,7 +233,7 @@ export async function findValidDiscounts(filter: any): Promise<any[]> {
     ...filter
   };
 
-  return Discount.find(discountFilter).select("name description startDate endDate discountTypeId");
+  return Discount.find(discountFilter).select("name description startDate endDate discountTypeId baseDiscountedAmount");
 }
 
 /**

@@ -1,6 +1,7 @@
 "use strict";
 
 import { Schema, model } from "mongoose";
+import { number } from "zod";
 
 // Article Schema
 const ArticleSchema = new Schema({
@@ -29,6 +30,7 @@ const DiscountSchema = new Schema({
   startDate: { type: Date, required: true },
   endDate: { type: Date, default: null },
   discountTypeId: { type: Schema.Types.ObjectId, ref: 'Article', required: true }, // Foreign key reference
+  baseDiscountedAmount: { type: Number, default: 0},
 }, { timestamps: true });
 
 // ArticleDiscount Schema

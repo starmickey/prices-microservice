@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import getErrorResponse from "../utils/getErrorResponse";
-import { GetArticlePriceSchema, UpdateArticlePriceSchema } from "../dtos/schemas/pricesSchemas";
-import { Unauthorized } from "../utils/exceptions";
+import { parseGetArticlePriceSchema, parseUpdateArticlePriceSchema } from "../dtos/schemas/pricesSchemas";
+import { NotFound, Unauthorized } from "../utils/exceptions";
 import { getArticleExists } from "../api/catalogApi";
 import { emitPriceUpdatedEvent } from "../rabbitmq/notificationsApi";
 import { getMostRecentArticlePrice } from "../repositories/prices.repository";
@@ -25,15 +25,14 @@ export async function getPriceHandler(req: Request, res: Response): Promise<void
     if (!token) throw new Unauthorized();
 
     // Validate input structure using zod
-    const { articleId } = GetArticlePriceSchema.parse(req.query);
+    const { articleId } = parseGetArticlePriceSchema(req.query);
 
     // Validate article exists in catalog microservice
     const articleExists = await getArticleExists(articleId, token);
 
     if (!articleExists) {
       await updateArticleState(articleId, 'DELETED');
-      res.status(404).json({ error: "Article not found" });
-      return;
+      throw new NotFound("Article not found");
     }
 
     const price = await getMostRecentArticlePrice(articleId);
@@ -62,7 +61,7 @@ export async function updatePriceHandler(req: Request, res: Response): Promise<v
     if (!token) throw new Unauthorized();
 
     // Validate input structure using zod
-    const { articleId, price, startDate } = UpdateArticlePriceSchema.parse(req.body);
+    const { articleId, price, startDate } = parseUpdateArticlePriceSchema(req.body);
 
     // Validate article exists in catalog microservice
     const articleExists = await getArticleExists(articleId, token);

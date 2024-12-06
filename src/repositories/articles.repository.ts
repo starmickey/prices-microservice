@@ -22,16 +22,16 @@ export async function getBulkOfArticlesByArticleId(articleIds: string[]) {
 }
 
 export async function updateArticleState(articleId: string, state: string) {
-  const article = await Article.findOne({ articleId }).populate("stateId");
-
-  if (!article) {
-    throw new NotFound(`Article not found`)
-  }
-
   const articleState = await ArticleState.findOne({ name: state }).select("id");
 
   if (!articleState) {
     throw new Error(`Article state ${state} not found`);
+  }
+
+  const article = await Article.findOne({ articleId }).populate("stateId");
+
+  if (!article) {
+    throw new NotFound(`Article not found`)
   }
 
   article.stateId = articleState._id;

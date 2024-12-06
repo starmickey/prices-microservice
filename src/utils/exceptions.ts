@@ -11,7 +11,7 @@ export class APIError extends Error {
 export class NotFound extends APIError {
   constructor(message: string) {
     super(message, 404);
-    this.name = "NotFound";
+    this.name = "Not found";
   }
 }
 

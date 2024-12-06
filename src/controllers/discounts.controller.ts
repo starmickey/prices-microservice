@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { CreateDiscountSchema, DeleteDiscountSchema, GetArticleDiscountSchema, UpdateDiscountSchema } from "../dtos/schemas/discountsSchemas";
+import { DeleteDiscountSchema, GetArticleDiscountSchema, parseCreateDiscountSchema, parseUpdateDiscountSchema } from "../dtos/schemas/discountsSchemas";
 import getErrorResponse from "../utils/getErrorResponse";
 import { getArticleExists } from "../api/catalogApi";
 import { Unauthorized } from "../utils/exceptions";
@@ -24,7 +24,7 @@ export async function createDiscountHandler(req: Request, res: Response): Promis
     if (!token) throw new Unauthorized();
 
     // Validate params types
-    const params = CreateDiscountSchema.parse(req.body);
+    const params = parseCreateDiscountSchema(req.body);
 
     // If articles provided, validate they exist in the catalog
     if (params.articles) {
@@ -65,7 +65,7 @@ export async function updateDiscountHandler(req: Request, res: Response): Promis
     if (!token) throw new Unauthorized();
 
     // Validate user input types
-    const params = UpdateDiscountSchema.parse(req.body);
+    const params = parseUpdateDiscountSchema(req.body);
 
     // If articles provided, validate they exist in the catalog
     if (params.articles) {

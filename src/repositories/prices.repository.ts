@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 import { PriceDTO } from '../dtos/api-entities/prices.dto';
 import { Article, ArticlePrice, ArticleState } from "../models/models";
 import { createArticleWithState } from "./articles.repository";
+import { BadRequest } from '../utils/exceptions';
 
 /**
  * Retrieves the most recent price for a given article.
@@ -21,16 +22,23 @@ export async function getMostRecentArticlePrice(articleId: string): Promise<numb
 
   if (!article) {
     article = await createArticleWithState(articleId, 'UNTAXED');
-    throw new Error("Article price has not been set yet");
+    throw new BadRequest("Article price has not been set yet");
   }
 
   const articleState = await ArticleState.findById(article.stateId);
   if (!articleState || articleState.name !== "TAXED") {
-    throw new Error("Article price has not been set yet");
+    throw new BadRequest("Article price has not been set yet");
   }
 
   const today = new Date();
   const recentPrice = await ArticlePrice.findOne({
+    articleId: article._id,
+    startDate: { $lte: today },
+  })
+    .sort({ startDate: -1 })
+    .limit(1);
+
+  const testQuery = await ArticlePrice.findOne({
     articleId: article._id,
     startDate: { $lte: today },
   })
