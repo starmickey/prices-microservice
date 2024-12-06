@@ -1,7 +1,15 @@
 # Microservicio de precios
 
 **Autora:** Micaela Jimena Estrella Morales
-**Legajo** 47660
+**Legajo** 47.660
+**DNI:** 44.247.044
+
+*Universidad Tecnológica Nacional*
+*Facultad Regional de Mendoza*
+*Arquitectura de Microservicios*
+
+2024
+
 
 ## Introducción
 
@@ -149,14 +157,15 @@ Authorization: Bearer token
     - Validar que fecha_actual <= `startDate`
 5. Si se incluyó un `endDate` en los parámetros:
     - Validar que `startDate` < `endDate`
-6. Validar la existencia del artículo consultando el microservicio catálogo.
-7. Validar existencia de un `DiscountType` con `id`=`discountTypeId`. Al obtenerlo se recuperan los `DiscountTypeParameter` asociados.
-8. Validar que por cada `DiscountTypeParameter` se incluyó un `parameterValue` con `value` de tipo válido y `parameterId` numérico mayor a cero.
-9. Crear instancia `Discount` con `name` y `description` iguales a los ingresados y `discountType` igual al recuperado y con:
+6. Si se incluyó un descuento base (`baseDiscountedAmount`), validar que este sea un número mayor a cero. Este descuento base indica un descuento aplicado sobre la totalidad del carrito sin importar qué artículos contenga. Su valor por defecto es cero.
+7. Validar la existencia del artículo consultando el microservicio catálogo.
+8. Validar existencia de un `DiscountType` con `id`=`discountTypeId`. Al obtenerlo se recuperan los `DiscountTypeParameter` asociados.
+9. Validar que por cada `DiscountTypeParameter` se incluyó un `parameterValue` con `value` de tipo válido y `parameterId` numérico mayor a cero.
+10. Crear instancia `Discount` con `name` y `description` iguales a los ingresados y `discountType` igual al recuperado y con:
     - `startDate` igual a la ingresada o la actual
     - `endDate` igual a la ingresada o `NULL`
-10. Crear instancias `ArticleDiscount` por cada uno de los artículos especificados.
-11. Crear instancias `DiscountTypeParameterValue` por cada uno de los parámetros indicados.
+11. Crear instancias `ArticleDiscount` por cada uno de los artículos especificados.
+12. Crear instancias `DiscountTypeParameterValue` por cada uno de los parámetros indicados.
 
 **Caminos alternativos:**
 * si el usuario no se encuentra logueado
@@ -187,6 +196,7 @@ Authorization: Bearer token
       "quantity": "123456",
     }
   ],
+  "baseDiscountedAmount": 1000,
   "discountTypeId": "123456",
   "startDate": "2024-11-02 16:00:00.000",
   "endDate": "2024-11-02 16:00:00.000",
@@ -256,15 +266,16 @@ Authorization: Bearer token
     - Validar que fecha_actual <= `startDate`
 6. Si se incluyó un `endDate` en los parámetros:
     - Validar que `startDate` < `endDate`
-7. Validar existencia de artículos mediante comunicación con el microservicio catálogo.
-8. Validar existencia de un `DiscountType` con `id`=`discountTypeId`. Al obtenerlo se recuperan los `DiscountTypeParameter` asociados.
-9. Validar que por cada `DiscountTypeParameter` se incluyó un `parameterValue` con `value` de tipo válido y `parameterId` numérico mayor a cero.
-10. Actualizar el `Discount anterior` con `endDate` igual a la actual.
-11. Crear instancia `Discount` con `name` y `description` iguales a los ingresados y `discountType` igual al recuperado y con:
+7. Si se incluyó un descuento base (`baseDiscountedAmount`), validar que este sea un número mayor a cero. Este descuento base indica un descuento aplicado sobre la totalidad del carrito sin importar qué artículos contenga. Su valor por defecto es cero.
+8. Validar existencia de artículos mediante comunicación con el microservicio catálogo.
+9. Validar existencia de un `DiscountType` con `id`=`discountTypeId`. Al obtenerlo se recuperan los `DiscountTypeParameter` asociados.
+10. Validar que por cada `DiscountTypeParameter` se incluyó un `parameterValue` con `value` de tipo válido y `parameterId` numérico mayor a cero.
+11. Actualizar el `Discount anterior` con `endDate` igual a la actual.
+12. Crear instancia `Discount` con `name` y `description` iguales a los ingresados y `discountType` igual al recuperado y con:
     - `startDate` igual a la ingresada o la actual
     - `endDate` igual a la ingresada o la del `Discount` anterior
-12. Crear instancias `ArticleDiscount` por cada uno de los artículos especificados.
-13. Crear instancias `DiscountTypeParameterValue` por cada uno de los parámetros indicados.
+13. Crear instancias `ArticleDiscount` por cada uno de los artículos especificados.
+14. Crear instancias `DiscountTypeParameterValue` por cada uno de los parámetros indicados.
 
 **Caminos alternativos:**
 * Si el usuario no se encuentra logueado
@@ -299,6 +310,7 @@ Authorization: Bearer token
     }
   ],
   "discountTypeId": "123456",
+  "baseDiscountedAmount": 1000,
   "startDate": "2024-11-02 16:00:00.000",
   "endDate": "2024-11-02 16:00:00.000",
   "parameterValues": [
@@ -593,14 +605,15 @@ Authorization: Bearer token
 
 ```json
 {
+  "totalAmount": "123456",
   "articles": [
     {
       "id": "123456",
       "quantity": "3",
+      "discountAmount": "123456",
       "totalAmount": "123456",
     }
   ],
-  "totalAmount": "123456",
   "discount": [
     {
       "id": "123456",

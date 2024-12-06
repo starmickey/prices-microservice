@@ -2,6 +2,14 @@ import { getConfig } from "../config";
 import axios from "axios";
 import { APIError } from "../utils/exceptions";
 
+/**
+ * Validate article existence in the catalog microservice
+ * 
+ * @param articleId - catalog id of the product
+ * @param token - session token
+ * @returns {boolean} - true if the article exists in the catalog
+ */
+
 export async function getArticleExists(articleId: string, token: string): Promise<boolean> {
   const { catalogUrl } = getConfig();
 
